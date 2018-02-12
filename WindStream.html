@@ -5,15 +5,194 @@
     <style type="text/css">
         body, html {
             overflow: hidden;
+            background-color: #1f0033; /*#39004d;*/
+        }
+
+        .unselectable
+        {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         #Debug {
             position: fixed;
-            left: 960px;
-            top:  10px;
-            background-color: rgba(100, 50, 100, 0.76);
-            color: white;
+            left: 10px;
+            top:  540px;
+            background-color: #1f0033; /*rgba(100, 50, 100, 1);*/
+            color: #A1D0FF;
+            width: 940px;
+            padding: 10px;
         }
+
+input[type=range] {
+  height: 25px;
+  -webkit-appearance: none;
+  margin: 10px 0;
+  width: 100%;
+  background-color: #1f0033; /*rgba(100, 50, 100, 1);*/
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 5px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 0px 0px 0px #000000;
+  background: #2497E3;
+  border-radius: 1px;
+  border: 0px solid #000000;
+}
+input[type=range]::-webkit-slider-thumb {
+  box-shadow: 0px 0px 0px #000000;
+  border: 1px solid #2497E3;
+  height: 18px;
+  width: 18px;
+  border-radius: 25px;
+  background: #A1D0FF;
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -7px;
+}
+input[type=range]:focus::-webkit-slider-runnable-track {
+  background: #2497E3;
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 5px;
+  cursor: pointer;
+  animate: 0.2s;
+  box-shadow: 0px 0px 0px #000000;
+  background: #2497E3;
+  border-radius: 1px;
+  border: 0px solid #000000;
+}
+input[type=range]::-moz-range-thumb {
+  box-shadow: 0px 0px 0px #000000;
+  border: 1px solid #2497E3;
+  height: 18px;
+  width: 18px;
+  border-radius: 25px;
+  background: #A1D0FF;
+  cursor: pointer;
+}
+input[type=range]::-ms-track {
+  width: 100%;
+  height: 5px;
+  cursor: pointer;
+  animate: 0.2s;
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+input[type=range]::-ms-fill-lower {
+  background: #2497E3;
+  border: 0px solid #000000;
+  border-radius: 2px;
+  box-shadow: 0px 0px 0px #000000;
+}
+input[type=range]::-ms-fill-upper {
+  background: #2497E3;
+  border: 0px solid #000000;
+  border-radius: 2px;
+  box-shadow: 0px 0px 0px #000000;
+}
+input[type=range]::-ms-thumb {
+  margin-top: 1px;
+  box-shadow: 0px 0px 0px #000000;
+  border: 1px solid #2497E3;
+  height: 18px;
+  width: 18px;
+  border-radius: 25px;
+  background: #A1D0FF;
+  cursor: pointer;
+}
+input[type=range]:focus::-ms-fill-lower {
+  background: #2497E3;
+}
+input[type=range]:focus::-ms-fill-upper {
+  background: #2497E3;
+}
+
+input[type="checkbox"]{
+  appearance:none;
+  width:40px;
+  height:16px;
+  border:1px solid #aaa;
+  border-radius:2px;
+  background:#ebebeb;
+  position:relative;
+  display:inline-block;
+  overflow:hidden;
+  vertical-align:middle;
+  transition: background 0.3s;
+  box-sizing:border-box;
+  -webkit-appearance: none;
+}
+input[type="checkbox"]:after{
+  content:'';
+  position:absolute;
+  top:-1px;
+  left:-1px;
+  width:14px;
+  height:14px;
+  background:white;
+  border:1px solid #aaa;
+  border-radius:2px;
+  transition: left 0.1s cubic-bezier(0.785, 0.135, 0.15, 0.86);
+}
+input[type="checkbox"]:checked{
+  background:#a6c7ff;
+  border-color:#8daee5;
+}
+input[type="checkbox"]:checked:after{
+  left:23px;
+  border-color:#8daee5;
+}
+
+input[type="checkbox"]:hover:not(:checked):not(:disabled):after,
+input[type="checkbox"]:focus:not(:checked):not(:disabled):after{
+  left:0px;
+}
+
+input[type="checkbox"]:hover:checked:not(:disabled):after,
+input[type="checkbox"]:focus:checked:not(:disabled):after{
+  left:22px;
+}
+
+input[type="checkbox"]:disabled{
+  opacity:0.5;
+}
+
+input[type="number"] {
+  display: inline-block;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+  padding: 4px;
+  /*border: 1px solid #b7b7b7;*/
+  border: 0px solid;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+  font: normal 14px/normal "source-code-pro", Helvetica, sans-serif;
+  color: #A1D0FF;
+  -o-text-overflow: clip;
+  text-overflow: clip;
+  text-align: right;
+  /*-webkit-box-shadow: 2px 2px 2px 0 rgb(163, 209, 255) inset;*/
+  /*box-shadow: 2px 2px 2px 0 rgb(163, 209, 255) inset;*/
+  /*text-shadow: 1px 1px 0 hsl(210, 100%, 82%) ;*/
+  -webkit-transition: class="support css-value">all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  -moz-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  -o-transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  transition: all 200ms cubic-bezier(0.42, 0, 0.58, 1);
+  background-color: #1f0033;
+}
     </style>
     <script type="text/javascript">
         class Particle
@@ -547,6 +726,19 @@
                 }
             }
 
+            SetTailSize(value)
+            {
+                var tailSize = this.tail.length;
+                if (tailSize)
+                {
+                    var segmentLength = value / tailSize;
+                    this.tail.forEach(function(particle)
+                    {
+                        particle.distance = segmentLength;
+                    });
+                }
+            }
+
             Tick()
             {
                 super.Tick();
@@ -843,25 +1035,57 @@
 
         function ChangeGravity(value)
         {
+            if (!(-100 <= value && value <= 100)) {
+                return false;
+            }
             gravity = value;
             var display = document.getElementById("gravityDisplay");
-            display.innerText = "Gravity " + value;
+            if (display)
+            {
+                display.value = value;
+            }
+            var slider = document.getElementById("gravitySlider");
+            if (slider)
+            {
+                slider.value = value;
+            }
         }
 
         function ToggleWind(value)
         {
             windEnabled = value;
         }
+
+        function ChangeTailSize(value)
+        {
+            if (value < 1)
+                return false;
+            var display = document.getElementById("tailSizeDisplay");
+            if (display)
+            {
+                display.value = value;
+            }
+            var slider = document.getElementById("tailSizeSlider")
+            if (slider)
+            {
+                slider.value = value;
+            }
+            particles.forEach(function(particle)
+            {
+                particle.SetTailSize(value);
+            });
+        }
     </script>
 </head>
 <body onload="WindStream()" oncontextmenu="return false;">
     <canvas id="windStreamCanvas"></canvas>
-    <div id="Debug">
+    <div id="Debug" class="unselectable">
         <label><input type="checkbox" name="Debug" onchange="Debug(this.checked);" />Debug</label><br>
         <label>Use LMB to attract particles within 200 px range to mouse cursor.</label><br>
         <label>Use RMB to push partciles wihtin 200 px range away from mouse cursor.</label><br>
-        <input type="range" name="Gravity" value="9.8" min="-100" max="100" oninput="ChangeGravity(this.value);" /><label id="gravityDisplay">Gravity 9.8</label><br>
+        <input type="range" name="Gravity" value="9.8" min="-100" max="100" id="gravitySlider" oninput="ChangeGravity(this.value);" /><label>Gravity</label><input type="number" id="gravityDisplay" value="9.8" oninput="ChangeGravity(this.value);" /><br>
         <label><input type="checkbox" checked="true" name="Wind" onchange="ToggleWind(this.checked);" />Wind</label><br>
+        <input type="range" value="100" min="1" max="400" id="tailSizeSlider" oninput="ChangeTailSize(this.value);" /><label>Tail Size</label><input type="number" id="tailSizeDisplay" value="100" oninput="ChangeTailSize(this.value);" /><label>px.</label><br>
     </div>
 </body>
 </html>
