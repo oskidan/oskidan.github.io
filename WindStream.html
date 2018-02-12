@@ -704,6 +704,7 @@ input[type="number"] {
             }
         }
 
+        var lineWidth = 1;
         class WindParticle extends Particle
         {
             constructor(x, y, tailSize, tailLength)
@@ -765,7 +766,7 @@ input[type="number"] {
                 var da = 1 / this.tail.length;
                 var a  = 1;
                 ctx.save();
-                ctx.lineWidth = 4;
+                ctx.lineWidth = lineWidth;
                 this.tail.forEach(function(p)
                 {
                     ctx.beginPath();
@@ -792,6 +793,8 @@ input[type="number"] {
         var screenWidth;
         var screenHeight;
 
+        var background;
+
         function Initialize2D()
         {
             var frontCanvas = document.getElementById('windStreamCanvas');
@@ -815,6 +818,9 @@ input[type="number"] {
 
             // Just copy the back buffer onto the front buffer.
             frontBuffer.globalCompositeOperation = "copy";
+
+            background = new Image();
+            background.src = "https://thirdpole.n.openearth.net/wp-content/uploads/sites/3/2015/12/2712985992_d43d525e54_b.jpg";
 
             return frontBuffer && backBuffer;
         }
@@ -915,8 +921,15 @@ input[type="number"] {
             totalTicks  += numTicks;
             console.log("Ticks", totalTicks, "Frames", totalFrames, "FPS ", totalFrames / totalTicks * frameTime);
 
-            backBuffer.clearRect(0, 0, backBuffer.canvas.width, backBuffer.canvas.height);
+            //backBuffer.clearRect(0, 0, backBuffer.canvas.width, backBuffer.canvas.height);
 
+            var oldAlpha = backBuffer.globalAlpha;
+            backBuffer.globalAlpha = 0.05;
+            backBuffer.drawImage(background, 0, 0);
+            backBuffer.globalAlpha = oldAlpha;
+
+            //backBuffer.fillStyle = 'rgba(0, 0, 0, 0.0125)';
+            //backBuffer.fillRect(0, 0, backBuffer.canvas.width, backBuffer.canvas.height);
 
             particles.forEach(function(p) 
             { 
@@ -1075,6 +1088,23 @@ input[type="number"] {
                 particle.SetTailSize(value);
             });
         }
+
+        function ChangeLineWidth(value)
+        {
+            if (value < 1)
+                return false;
+            var display = document.getElementById("lineWidthDisplay");
+            if (display)
+            {
+                display.value = value;
+            }
+            var slider = document.getElementById("lineWidthSlider")
+            if (slider)
+            {
+                slider.value = value;
+            }
+            lineWidth = value;
+        }
     </script>
 </head>
 <body onload="WindStream()" oncontextmenu="return false;">
@@ -1086,6 +1116,7 @@ input[type="number"] {
         <input type="range" name="Gravity" value="9.8" min="-100" max="100" id="gravitySlider" oninput="ChangeGravity(this.value);" /><label>Gravity</label><input type="number" id="gravityDisplay" value="9.8" oninput="ChangeGravity(this.value);" /><br>
         <label><input type="checkbox" checked="true" name="Wind" onchange="ToggleWind(this.checked);" />Wind</label><br>
         <input type="range" value="100" min="1" max="400" id="tailSizeSlider" oninput="ChangeTailSize(this.value);" /><label>Tail Size</label><input type="number" id="tailSizeDisplay" value="100" oninput="ChangeTailSize(this.value);" /><label>px.</label><br>
+        <input type="range" value="1" min="1" max="100" id="lineWidthSlider" oninput="ChangeLineWidth(this.value);" /><label>Line Width</label><input type="number" id="lineWidthDisplay" value="1" oninput="ChangeLineWidth(this.value);" /><label>px.</label><br>
     </div>
 </body>
 </html>
