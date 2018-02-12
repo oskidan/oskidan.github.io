@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IK Particles Demo for Chris</title>
+    <style type="text/css">
+        body, html {
+            overflow: hidden;
+        }
+
+        #Debug {
+            position: fixed;
+            left: 960px;
+            top:  10px;
+            background-color: rgba(100, 50, 100, 0.76);
+            color: white;
+        }
+    </style>
+    <script type="text/javascript">
+        class Particle
+        {
+            constructor(x, y)
+            {
+                this.x = x === undefined ? 0 : x;
+                this.y = y === undefined ? 0 : y;
+
+                this.target    = null;
+                this.distance  = 0;     ///< Holds the distance to target in world units.
+                this.threshold = 0;     ///< Holds the thresold in range 0 to 1 (maps to 0% to 100%) at whch the 
+                                        /// distance constraint is considered to be violated.
+            }
+
+            HasTarget()
+            {
+                return this.target && this.target.x && this.target.y && this.distance && this.thresold;
+            }
+
+            SetTarget(target, distance, thresold)
+            {
+                this.target   = target;
+                this.distance = distance === undefined ? 0   : distance;
+                this.thresold = thresold === undefined ? 0.9 : thresold;
+            }
+
+            Tick()
+            {
+                if (!this.HasTarget())
+                    return;
+
+                var dx = this.target.x - this.x;
+                var dy = this.target.y - this.y;
+
+                var distance = Math.sqrt(dx * dx + dy * dy);
+
+                var offset = distance - this.distance;
+                var offsetRatio = Math.abs(offset / this.distance);
+                if (offsetRatio <= this.thresold) return;
+
+                var directionX = distance ? dx / distance : 0;
+                var directionY = distance ? dy / distance : 0;
+
+                this.x += directionX * offset;
+                this.y += directionY * offset;
+            }
+
+            DebugDraw(ctx)
+            {
+                if (!ctx) 
+                {
+                    console.warning("[ Particle.DebugDraw ] Invalid argument: ctx");
+                    return;
+                }
+
+                ctx.beginPath()
+                ctx.arc(this.x, this.y, 10, 0, Math.PI * 2, true)
+                ctx.stroke()
+            }
+        }
+
+        class Wall
+        {
+            constructor(nx, ny, distance)
+            {
+                this.nx = nx === undefined ? 0 : nx;
+                this.ny = ny === undefined ? 1 : ny;
+
+                this.distance = distance || 0;
+
+                var normalLength = Math.sqrt(this.nx * this.nx + this.ny * this.ny);
+                if (normalLength)
+                {
+                    this.nx /= normalLength;
+                    this.ny /= normalLength;
+                }
+            }
+
+            DetectCollision(collider)
+            {
+                if (!collider.HasParent())
+                {
+                    return { detected: false };
+                }
+
+                var crossProduct = this.nx * collider.parent.x +  this.ny * collider.parent.y;
+                if (crossProduct > this.distance) {
+                    return { detected: false };
+                }
+
+                return {
+                        detected: true,
+                        penetration: this.distance - crossProduct,
+                        direction:   
+                        {
+                            x: -this.nx,
+                            y: -this.ny,
+                        },
+                        body:     collider.parent,
+                        collider: collider
+                    };
+            }
+
+            DebugDraw(ctx)
+            {
+                var x0 = this.nx * this.distance;
+                var y0 = this.ny * this.distance;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+                ctx.fillStyle   = 'rgba(255, 0, 0, 0.5)';
+                ctx.rotate(Math.atan2(this.ny, this.nx));
+                ctx.translate(this.distance, 0);
+                ctx.beginPath();
+                ctx.moveTo(0, 0 );
+                ctx.lineTo(10, 0);
+                ctx.stroke();
+                ctx.fillRect(-10000, -10000, 10000, 20000);
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(10, 10);
+                ctx.lineTo(20, 0);
+                ctx.lineTo(10, -10);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            Draw(ctx)
+            {
+                ctx.save();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.7)';
+                ctx.rotate(Math.atan2(this.ny, this.nx));
+                ctx.translate(this.distance, 0);
+                ctx.beginPath();
+                ctx.moveTo(0, -10000);
+                ctx.lineTo(0,  10000);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        class Collider
+        {
+            constructor(parent, radius)
+            {
+                this.parent = parent;
+                this.radius = radius === undefined ? 0 : radius;
+            }
+
+            HasParent()
+            {
+                return this.parent && this.parent.x && this.parent.y;
+            }
+
+            DetectCollision(that)
+            {
+                if (!this.HasParent() || !that.HasParent())
+                {
+                    return { detected: false };
+                }
+
+                var dx = this.parent.x - that.parent.x;
+                var dy = this.parent.y - that.parent.y;
+
+                var minDistance = this.radius + that.radius;
+
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < minDistance)
+                {
+                    return {
+                        detected: true,
+                        penetration: minDistance - distance,
+                        direction:   
+                        {
+                            x: dx / distance,
+                            y: dy / distance,
+                        },
+                        bodyA: this.parent,
+                        bodyB: that.parent,
+                        colliderA: this,
+                        colliderB: that
+                    };
+                }
+
+                return { detected: false };
+            }
+
+            DebugDraw(ctx, highlight)
+            {
+                if (!this.HasParent())
+                    return;
+
+                ctx.strokeStyle = 'rgba(200, 100, 100, 1)';
+                ctx.fillStyle   = 'rgba(255, 100, 100, 1)';
+
+                ctx.beginPath()
+                ctx.arc(this.parent.x, this.parent.y, this.radius, 0, Math.PI * 2, true)
+                highlight ? ctx.fill() : ctx.stroke();
+            }
+        }
+
+        class Physics
+        {
+            static get Dt() 
+            {
+                return 1 / 60;
+            }
+
+            static get SquaredDt()
+            {
+                return Physics.Dt * Physics.Dt;
+            }
+
+            constructor(parent)
+            {
+                this.parent = parent;
+                this.pastX = this.parent ? this.parent.x : 0;
+                this.pastY = this.parent ? this.parent.y : 0;
+                this.accelX = 0
+                this.accelY = 0
+                this.invMass = 1;
+            }
+
+            HasParent()
+            {
+                return this.parent && this.parent.x && this.parent.y;
+            }
+
+            get x()
+            {
+                return this.parent ? this.parent.x : undefined;
+            }
+
+            get y()
+            {
+                return this.parent ? this.parent.y : undefined;
+            }
+
+            ApplyForce(x, y)
+            {
+                this.accelX += x * this.invMass;
+                this.accelY += y * this.invMass;
+            }
+
+            ApplyMomentum(x, y)
+            {
+                if (!this.HasParent())
+                    return;
+
+                this.parent.x += this.invMass * x * Physics.Dt;
+                this.parent.y += this.invMass * y * Physics.Dt;
+            }
+
+            Tick()
+            {
+                if (!this.HasParent())
+                    return;
+
+                var x = this.parent.x;
+                var y = this.parent.y;
+                this.parent.x += (this.parent.x - this.pastX) + this.accelX * Physics.SquaredDt;
+                this.parent.y += (this.parent.y - this.pastY) + this.accelY * Physics.SquaredDt;
+                this.pastX = x;
+                this.pastY = y;
+
+                this.accelX = 0;
+                this.accelY = 0;
+            }
+
+            DebugDraw(ctx)
+            {
+                if (!this.HasParent())
+                    return;
+
+                var width  = 8;
+                var height = 8;
+
+                var x0 = this.parent.x - width  / 2;
+                var y0 = this.parent.y - height / 2;
+
+                ctx.strokeStyle = 'rgba(100, 100, 255, 1)';
+                ctx.beginPath();
+                ctx.strokeRect(x0, y0, width, height);
+                ctx.stroke();
+            }
+        }
+
+        var windEnabled = true;
+        class WindForce
+        {
+            constructor()
+            {
+                this.angle = 0;
+            }
+
+            ApplyTo(body)
+            {
+                if (!windEnabled)
+                    return;
+
+                if (!body.HasParent())
+                    return;
+
+                var x = body.parent.x;
+                var y = body.parent.y;
+
+                var length = Math.sqrt(x * x + y * y);
+
+                var forceX = x / length + Math.cos(this.angle) * 100;
+                var forceY = y / length + Math.sin(this.angle) * 100;
+
+                body.ApplyForce(forceX, forceY);
+            }
+
+            IsKilled() { return false; }
+
+            Tick()
+            {
+                if (!windEnabled)
+                    return;
+
+                this.angle += 0.01;
+            }
+
+            DebugDraw(ctx)
+            {
+                if (!windEnabled)
+                    return;
+
+                var w = ctx.canvas.width;
+                var h = ctx.canvas.height;
+
+                for (var x = 10; x < w; x += 10) {
+                    for (var y = 10; y < h; y += 10) {
+
+                        var length = Math.sqrt(x * x + y * y);
+        
+                        var forceX = x / length + Math.cos(this.angle) * 10;
+                        var forceY = y / length + Math.sin(this.angle) * 10;
+
+                        ctx.strokeStyle = 'rgba(100, 100, 255, 0.5)';
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + forceX, y + forceY);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            Draw(ctx)
+            {}
+        }
+
+        var gravity = 9.8;
+        class GravityForce
+        {
+            Tick() {}
+
+            IsKilled() { return false; }
+
+            ApplyTo(body)
+            {
+                if (!body.HasParent())
+                    return;
+
+                body.ApplyForce(0, gravity);
+            }
+
+            DebugDraw(ctx)
+            {
+            }
+
+            Draw(ctx)
+            {}
+        }
+
+        class AttractorForce
+        {
+            constructor(x, y, ticksToLive, distance)
+            {
+                this.x = (x === undefined ? 0 : x);
+                this.y = (y === undefined ? 0 : y);
+
+                this.ticksToLive = (ticksToLive === undefined ? 0 : ticksToLive);
+                this.maxTicks    = this.ticksToLive;
+
+                this.distance = (distance === undefined ? 0 : distance);
+            }
+
+            IsKilled()
+            {
+                return this.ticksToLive <= 0;
+            }
+
+            Tick()
+            {
+                this.ticksToLive--;
+            }
+
+            ApplyTo(body)
+            {
+                if (!body.HasParent())
+                    return;
+
+                var dx = this.x - body.parent.x;
+                var dy = this.y - body.parent.y;
+
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > this.distance)
+                    return;
+
+                var nx = dx / distance;
+                var ny = dy / distance;
+
+                var forceX = nx * (distance / this.distance) * 100;
+                var forceY = ny * (distance / this.distance) * 100;
+
+                body.ApplyForce(forceX, forceY);
+            }
+
+            DebugDraw(ctx)
+            {
+                var alpha = this.ticksToLive / this.maxTicks;
+                ctx.save();
+                ctx.fillStyle = 'rgba(100, 255, 150,' + alpha +')';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.distance, 0, Math.PI * 2, true);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            Draw(ctx)
+            {
+                var alpha = this.ticksToLive / this.maxTicks;
+                ctx.save();
+                ctx.fillStyle = 'rgba(200, 255, 200,' + 0.1 * alpha +')';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.distance, 0, Math.PI * 2, true);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class PushForce
+        {
+            constructor(x, y, ticksToLive, distance)
+            {
+                this.x = (x === undefined ? 0 : x);
+                this.y = (y === undefined ? 0 : y);
+
+                this.ticksToLive = (ticksToLive === undefined ? 0 : ticksToLive);
+                this.maxTicks    = this.ticksToLive;
+
+                this.distance = (distance === undefined ? 0 : distance);
+            }
+
+            IsKilled()
+            {
+                return this.ticksToLive <= 0;
+            }
+
+            Tick()
+            {
+                this.ticksToLive--;
+            }
+
+            ApplyTo(body)
+            {
+                if (!body.HasParent())
+                    return;
+
+                var dx = this.x - body.parent.x;
+                var dy = this.y - body.parent.y;
+
+                var distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance > this.distance)
+                    return;
+
+                var nx = dx / distance;
+                var ny = dy / distance;
+
+                var forceX = nx * (distance / this.distance) * 100;
+                var forceY = ny * (distance / this.distance) * 100;
+
+                body.ApplyForce(-forceX, -forceY);
+            }
+
+            DebugDraw(ctx)
+            {
+                var alpha = this.ticksToLive / this.maxTicks;
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 100, 150,' + alpha +')';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.distance, 0, Math.PI * 2, true);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            Draw(ctx)
+            {
+                var alpha = this.ticksToLive / this.maxTicks;
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 200, 200,' + 0.1 * alpha +')';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.distance, 0, Math.PI * 2, true);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class WindParticle extends Particle
+        {
+            constructor(x, y, tailSize, tailLength)
+            {
+                super(x, y);
+
+                this.radius = 4;
+                this.tail = [];
+
+                var tailSegmentLength = (tailLength / tailSize) || 0;
+
+                var target = this;
+                for (var i = 0; i < tailSize; i++) 
+                {
+                    var p = new Particle(x, y);
+                    this.tail.push(p);
+
+                    p.SetTarget(target, tailSegmentLength);
+                    target = p;
+                }
+            }
+
+            Tick()
+            {
+                super.Tick();
+                this.tail.forEach(function(p) 
+                {
+                    p.Tick();
+                });
+            }
+
+            DebugDraw(ctx)
+            {
+                ctx.strokeStyle = 'rgba(100, 200, 100, 1)';
+                super.DebugDraw(ctx);
+                this.tail.forEach(function(p) 
+                {
+                    p.DebugDraw(ctx);
+                });
+            }
+
+            Draw(ctx)
+            {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
+                var head = this;
+                var da = 1 / this.tail.length;
+                var a  = 1;
+                ctx.save();
+                ctx.lineWidth = 4;
+                this.tail.forEach(function(p)
+                {
+                    ctx.beginPath();
+                    ctx.strokeStyle = 'rgba(255, 100, 200, ' + a + ')';
+                    ctx.moveTo(head.x, head.y);
+                    ctx.lineTo(p.x, p.y);
+                    ctx.stroke();
+                    head = p;
+                    a -= da;
+                });
+                ctx.restore();
+            }
+        }
+
+
+        window.RequestAnimationFrame = (function(callback) {
+            return window.requestAnimationFrame    || window.webkitRequestAnimationFrame || 
+                   window.mozRequestAnimationFrame || window.oRequestAnimationFrame      || 
+                   window.msRequestAnimationFrame  || function(callback) { window.setTimeout(callback, 1000 / 60); };
+        })();
+
+        var frontBuffer;    ///< Holds the 2D context which is visible on screen
+        var backBuffer;     ///< Holds the 2D context which is off screen.
+        var screenWidth;
+        var screenHeight;
+
+        function Initialize2D()
+        {
+            var frontCanvas = document.getElementById('windStreamCanvas');
+            if (!frontCanvas.getContext) 
+                return false;
+
+            var backCanvas = document.createElement('canvas');
+            if (!backCanvas.getContext)
+                return false;
+
+            screenWidth  = 1920 * 0.5; // window.innerWidth;
+            screenHeight = 1080 * 0.5; // window.innerHeight;
+
+            frontCanvas.width  = screenWidth;
+            frontCanvas.height = screenHeight;
+            frontBuffer        = frontCanvas.getContext('2d');
+
+            backCanvas.width  = screenWidth;
+            backCanvas.height = screenHeight;
+            backBuffer        = backCanvas.getContext('2d');
+
+            // Just copy the back buffer onto the front buffer.
+            frontBuffer.globalCompositeOperation = "copy";
+
+            return frontBuffer && backBuffer;
+        }
+
+        var mouseX;
+        var mouseY;
+        var mouseClicked = false;
+        var mouseRight   = false;
+
+        function InitializeInput()
+        {
+            document.onmousemove = function(event) {
+                if (1 == event.buttons)
+                {
+                    mouseX = event.clientX;
+                    mouseY = event.clientY;
+                    mouseClicked = true;
+                }
+                if (2 == event.buttons)
+                {
+                    mouseX = event.clientX;
+                    mouseY = event.clientY;
+                    mouseClicked = true;
+                    mouseRight   = true;
+                }
+            };
+            return true;
+        }
+
+        var debugDraw = false;
+
+        var particles = [];
+        var colliders = [];
+        var physics   = [];
+        var walls     = [];
+        var forces    = [];
+
+        function InitializeWorld()
+        {
+            for (var i = 0; i < 500; i++) 
+            {
+                var p = new WindParticle(Math.random() * backBuffer.canvas.width,
+                                         Math.random() * backBuffer.canvas.height,
+                                         10, 100);
+                particles.push(p);
+
+                var phy = new Physics(p);
+                physics.push(phy);
+
+                var c = new Collider(phy, 4);
+                colliders.push(c);
+            }
+            walls.push(new Wall(  1,  1, 100));
+            walls.push(new Wall( -1, -1, -Math.max(screenHeight, screenWidth ) + 100));
+            walls.push(new Wall(  0,  1, 20 ));
+            walls.push(new Wall(  1,  0, 20 ));
+            walls.push(new Wall( -1,  0, -screenWidth  + 20));
+            walls.push(new Wall(  0, -1, -screenHeight + 20));
+
+            forces.push(new WindForce());
+            forces.push(new GravityForce());
+            return true;
+        }
+
+        var totalTime = 0;
+        var lastTime = window.performance.now();
+        var frameTime = 1000/30;
+        var totalFrames = 0;
+        var totalTicks  = 0;
+
+        function DrawFrame()
+        {
+            if (mouseClicked)
+            {
+                if ((0 <= mouseX && mouseX < screenWidth) &&
+                    (0 <= mouseY && mouseY < screenHeight))
+                {
+                    forces.push(mouseRight ? new PushForce(mouseX, mouseY, 60, 200) 
+                                           : new AttractorForce(mouseX, mouseY, 60, 200));
+                }
+                mouseClicked = false;
+                mouseRight   = false;
+            }
+
+            var currentTime = window.performance.now();
+            totalTime += (currentTime - lastTime);
+            lastTime = currentTime;
+
+            var numTicks = Math.floor(totalTime / frameTime);
+            //console.log("totalTime", totalTime, "numTicks", numTicks);
+            if (0 == numTicks) {
+                RequestAnimationFrame(DrawFrame);
+                return;
+            }
+
+            totalTime -= numTicks * frameTime;
+            totalFrames += 1;
+            totalTicks  += numTicks;
+            console.log("Ticks", totalTicks, "Frames", totalFrames, "FPS ", totalFrames / totalTicks * frameTime);
+
+            backBuffer.clearRect(0, 0, backBuffer.canvas.width, backBuffer.canvas.height);
+
+
+            particles.forEach(function(p) 
+            { 
+                for (var tick = 0; tick < numTicks; tick++)
+                    p.Tick(); 
+            });
+            particles.forEach(function(p) 
+            { 
+                if (debugDraw)
+                    p.DebugDraw(backBuffer); 
+                p.Draw(backBuffer);
+            });
+
+            if (debugDraw)
+            {
+                colliders.forEach(function(c) 
+                {
+                    c.DebugDraw(backBuffer);
+                });
+            }
+
+            var numColliders = colliders.length;
+            for (var i = 0; i < numColliders; i++) {
+                for (var j = i + 1; j < numColliders; j++) {
+                    var collision =  colliders[i].DetectCollision(colliders[j]);
+                    if (collision.detected) 
+                    {
+                        if (debugDraw)
+                        {
+                            collision.colliderA.DebugDraw(backBuffer, true);
+                            collision.colliderB.DebugDraw(backBuffer, true);
+                        }
+
+                        var halfPenetration = collision.penetration / 2;
+
+                        var momentumX = (collision.direction.x * halfPenetration) / Physics.Dt;
+                        var momentumY = (collision.direction.y * halfPenetration) / Physics.Dt;
+                        collision.bodyA.ApplyMomentum( momentumX,  momentumY);
+                        collision.bodyB.ApplyMomentum(-momentumX, -momentumY);
+                    }
+                }
+            }
+
+            walls.forEach(function(wall)
+            {
+                if (debugDraw)
+                    wall.DebugDraw(backBuffer);
+
+                wall.Draw(backBuffer);
+
+                for (var i = 0; i < numColliders; i++) 
+                {
+                    var collision = wall.DetectCollision(colliders[i]);
+                    if (collision.detected)
+                    {
+                        if (debugDraw)
+                            collision.collider.DebugDraw(backBuffer, true);
+
+                        var momentumX = (collision.direction.x * collision.penetration) / Physics.Dt;
+                        var momentumY = (collision.direction.y * collision.penetration) / Physics.Dt;
+                        collision.body.ApplyMomentum(-momentumX, -momentumY);
+                    }
+                }
+            });
+
+            forces.forEach(function(force)
+            {
+                for (var tick = 0; tick < numTicks; tick++)
+                    force.Tick();
+                
+                if (debugDraw)
+                    force.DebugDraw(backBuffer);
+                else
+                    force.Draw(backBuffer);
+                
+                physics.forEach(function(phy)
+                {
+                    force.ApplyTo(phy)
+                });
+            });
+
+            physics.forEach(function(phy)
+            {
+                for (var tick = 0; tick < numTicks; tick++)
+                    phy.Tick();
+
+                if (debugDraw)
+                    phy.DebugDraw(backBuffer);
+            });
+
+            var numForces = forces.length;
+            for (var i = 0; i < numForces; i++) {
+                if (forces[i].IsKilled()) {
+                    forces.splice(i, 1);
+                    i--;
+                    numForces--;
+                }
+            }
+
+            frontBuffer.drawImage(backBuffer.canvas, 0, 0);
+            RequestAnimationFrame(DrawFrame);
+        }
+
+        function WindStream()
+        {
+            if (!Initialize2D()) return;
+            if (!InitializeWorld()) return;
+            if (!InitializeInput()) return;
+            DrawFrame();
+        }
+
+        function Debug(enabled)
+        {
+            debugDraw = enabled;
+        }
+
+        function ChangeGravity(value)
+        {
+            gravity = value;
+            var display = document.getElementById("gravityDisplay");
+            display.innerText = "Gravity " + value;
+        }
+
+        function ToggleWind(value)
+        {
+            windEnabled = value;
+        }
+    </script>
+</head>
+<body onload="WindStream()" oncontextmenu="return false;">
+    <canvas id="windStreamCanvas"></canvas>
+    <div id="Debug">
+        <label><input type="checkbox" name="Debug" onchange="Debug(this.checked);" />Debug</label><br>
+        <label>Use LMB to attract particles within 200 px range to mouse cursor.</label><br>
+        <label>Use RMB to push partciles wihtin 200 px range away from mouse cursor.</label><br>
+        <input type="range" name="Gravity" value="9.8" min="-100" max="100" oninput="ChangeGravity(this.value);" /><label id="gravityDisplay">Gravity 9.8</label><br>
+        <label><input type="checkbox" checked="true" name="Wind" onchange="ToggleWind(this.checked);" />Wind</label><br>
+    </div>
+</body>
+</html>
