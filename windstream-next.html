@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+
+<head>
+	<title>Windstream Prototype</title>
+
+	<script type="x-shader/x-vertex" id="vsRender">
+		#version 100
+		precision highp float;
+
+		attribute vec2 vertexPosition;
+
+		void main() {
+			gl_Position  = vec4(vertexPosition, 0.0, 1.0);
+			gl_PointSize = 2.0; 
+		}
+	</script>
+	<script type="x-shader/x-fragment" id="fsRender">
+		#version 100
+		precision highp float;
+
+		uniform sampler2D texture;
+		uniform vec2      resolution;
+
+		void main() {
+			vec2 texCoord = gl_FragCoord.xy / resolution;
+
+			vec2 fragmentPosition = 2.0 * gl_PointCoord - 1.0;
+
+			float distance = length(fragmentPosition);
+
+			float distanceSquared = distance * distance;
+			
+			gl_FragColor = vec4(texture2D(texture, texCoord).rgb, distanceSquared);
+			gl_FragColor = texture2D(texture, texCoord);
+		}
+	</script>
+
+	<script type="x-shader/x-vertex" id="vsCopy">
+		#version 100
+		precision highp float;
+
+		attribute vec2 vertexPosition;
+
+		void main() {
+			gl_Position  = vec4(vertexPosition, 0.0, 1.0);
+		}
+	</script>
+	<script type="x-shader/x-fragment" id="fsCopy">
+		#version 100
+		precision highp float;
+
+		uniform sampler2D texture;
+		uniform vec2      resolution;
+
+		void main() {
+			vec2 texCoord = gl_FragCoord.xy / resolution;
+			gl_FragColor = texture2D(texture, texCoord);
+		}
+	</script>
+
+	<script type="x-shader/x-vertex" id="vsAdvection">
+		#version 100
+		precision highp float;
+
+		attribute vec2 vertexPosition;
+
+		void main() {
+			gl_Position = vec4(vertexPosition, 0.0, 1.0);
+		}
+	</script>
+	<script type="x-shader/x-fragment" id="fsAdvection">
+		#version 100
+		precision highp float;
+
+		uniform sampler2D texture;
+		uniform sampler2D uvTexture;
+		uniform vec2      resolution;
+
+		float luma(in vec4 color) {
+			return dot(color.rgb, vec3(1.0)) / 3.0;
+		}
+
+		void main() {
+			vec2 texCoord = gl_FragCoord.xy / resolution;
+
+			vec2 pastFragCoord = gl_FragCoord.xy - normalize(texture2D(uvTexture, texCoord).xy - vec2(0.5));
+
+			vec2 pastTexCoord = pastFragCoord / resolution;
+
+			vec4 currColor = texture2D(texture, texCoord);
+			vec4 pastColor = texture2D(texture, pastTexCoord);
+
+			float currLuma = luma(currColor);
+			float pastLuma = luma(pastColor);
+
+			if (pastLuma >= currLuma) {
+				gl_FragColor = pastColor;
+			} else {
+				gl_FragColor = currColor;
+			}
+
+			gl_FragColor *= 0.98;
+		}
+	</script>
+
+	<script type="text/javascript">
+
+		///
+		class Error {
+			constructor(message) {
+				this.message = message || "Unknown error.";
+			}
+		}
+
+		///
+		const ShaderProgram = (function() {
+			let _ = new WeakMap();
+
+			let $ = {
+				shaderProgram: null,
+			};
+
+			function compileShader(gl, kind, source) {
+				let shader = gl.createShader(kind);
+				gl.shaderSource(shader, source);
+
+				gl.compileShader(shader);
+				if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+
+					let kindStr = "UNKNOWN";
+					switch (kind) {
+						default: break;
+
+						case gl.VERTEX_SHADER:    kindStr = "VERTEX_SHADER";	break;
+						case gl.FRAGMENT_SHADER:  kindStr = "FRAGMENT_SHADER";	break;
+					}
+
+					let error = new Error(`Cannot compile ${kindStr} shader: ${gl.getShaderInfoLog(shader)}`);
+					gl.deleteShader(shader);
+					throw error;
+				}
+
+				return shader;
+			}
+
+			class ShaderProgram {
+				constructor(gl, sources) {
+					
+					let shaderProgram = gl.createProgram();
+
+					for (let source of sources) {
+						let shader = compileShader(gl, source.kind, source.text);
+						gl.attachShader(shaderProgram, shader);
+						gl.deleteShader(shader);
+					}
+
+					gl.linkProgram(shaderProgram);
+					if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+
+						let error = new Error(`Cannot link shader program: ${gl.getProgramInfoLog(shaderProgram)}`);
+						gl.deleteProgram(shaderProgram);
+						throw error;
+					}
+
+					let textureUnit = 0;
+
+					let uniforms = new Set();
+					for (let i = gl.getProgramParameter(shaderProgram, gl.ACTIVE_UNIFORMS); i--; ) {
+						let uniform = gl.getActiveUniform(shaderProgram, i);
+
+						uniform["location"] = gl.getUniformLocation(shaderProgram, uniform.name);
+
+						if (gl.SAMPLER_2D == uniform.type) {
+							Object.defineProperty(this, uniform.name, {
+								enumerable: true,
+
+								set: function(texture) {
+									texture.enable(textureUnit);
+									gl.uniform1i(uniform.location, textureUnit);
+								}
+							});
+
+							textureUnit++;
+						} else {
+							let functionName = "";
+
+							switch (uniform.type) {
+								case gl.FLOAT: 		functionName = "uniform1f"; 	break;
+								case gl.INT:   		functionName = "uniform1i"; 	break;
+								case gl.FLOAT_VEC2: functionName = "uniform2fv";	break;
+								default:
+									throw new Error(`Unknown uniform type: ${uniform.type}`);
+							}
+
+							Object.defineProperty(this, uniform.name, {
+								enumerable: true,
+
+								set: function(...value) {
+									if (value[0] && value[0] instanceof Array) {
+										gl[functionName].apply(gl, [uniform.location, new Float32Array(value[0])])
+									} else {
+										gl[functionName].apply(gl, [uniform.location, ...value]);
+									}
+								}
+							});
+						}
+
+						uniforms.add(uniform.name);
+					}
+
+					let attributes = new Set();
+					for (let i = gl.getProgramParameter(shaderProgram, gl.ACTIVE_ATTRIBUTES); i--; ) {
+						let attribute = gl.getActiveAttrib(shaderProgram, i);
+
+						let functionName = `vertexAttrib${attribute.size}f`;
+
+						Object.defineProperty(this, attribute.name, {
+							enumerable: true,
+
+							set: function(attribute) {
+								if (attribute) {
+									gl.enableVertexAttribArray(i);
+									gl.vertexAttribPointer(i, attribute.size, attribute.type, attribute.normalized, 
+										attribute.stride, attribute.offset);
+								} else {
+									gl.disableVertexAttribArray(i);
+								}
+							}
+						});
+
+						attributes.add(attribute.name);
+					}
+
+					_.set(this, {
+						gl: 		   gl,
+						shaderProgram: shaderProgram,
+						uniforms:      uniforms,
+						attributes:    attributes,
+					});
+				}
+
+				get uniforms   () { return _.get(this).uniforms;   }
+				get attributes () { return _.get(this).attributes; }
+
+				enable() {
+					let gl, shaderProgram;
+					({gl, shaderProgram} = _.get(this));
+
+					if (shaderProgram != $.shaderProgram) {
+						gl.useProgram(shaderProgram);
+
+						$.shaderProgram = shaderProgram;
+					}
+				}
+
+				disable() {
+					let gl, shaderProgram;
+					({gl, shaderProgram} = _.get(this));
+
+					if (shaderProgram == $.shaderProgram) {
+						gl.useProgram(null);
+
+						$.shaderProgram = null;
+					}
+				}
+			}
+
+			return ShaderProgram;
+		})();
+
+		///
+		const Float  = Symbol("Float");
+		const Float2 = Symbol("Float2");
+		const Float3 = Symbol("Float3");
+		const Float4 = Symbol("Float4");
+
+		///
+		const VertexDescriptor = (function() {
+			let _ = new WeakMap();
+
+			class VertexDescriptor {
+				constructor(gl) {
+					_.set(this, {
+						gl: 	gl,
+						stride: 0,
+					});
+				}
+
+				withAttribute(name, type) {
+					
+					let gl = _.get(this).gl;
+
+					const typeInfo = {
+
+						[Float]: {
+							type: 		gl.FLOAT,
+							size: 		1,
+							numBytes: 	4,
+						},
+
+						[Float2]: {
+							type: 		gl.FLOAT,
+							size: 		2,
+							numBytes: 	8,
+						},
+
+						[Float3]: {
+							type: 		gl.FLOAT,
+							size: 		3,
+							numBytes: 	12,
+						},
+
+						[Float4]: {
+							type: 		gl.FLOAT,
+							size: 		4,
+							numBytes: 	16,
+						},
+					};
+
+					const offset = this.stride
+
+					_.get(this).stride += typeInfo[type].numBytes;
+
+					Object.defineProperty(this, name, {
+						enumerable: true,
+
+						get: function() {
+							return Object.create({ offset: offset, ...typeInfo[type], stride: this.stride });
+						}
+					});
+
+					return this;
+				}
+
+				get stride() {
+					return _.get(this).stride;
+				}
+			}
+
+			return VertexDescriptor;
+		})();
+
+		///
+		const VertexBuffer = (function() {
+			let _ = new WeakMap();
+
+			let $ = {
+				bufferObject: null,
+			};
+
+			class VertexBuffer {
+				constructor(gl, vertices, vertexDescriptor) {
+
+					if (!(vertices instanceof Float32Array)) {
+						throw Error(`Invalid argument given vertices must be an instance of Float32Array.`);
+					}
+
+					let bufferObject = gl.createBuffer();
+					gl.bindBuffer(gl.ARRAY_BUFFER, bufferObject);
+					gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STREAM_DRAW);
+					gl.bindBuffer(gl.ARRAY_BUFFER, $.bufferObject);
+
+					let stride = vertexDescriptor.stride || 0;
+					let byteLength = vertices.byteLength || 0;
+					let numVertices = stride ? Math.floor(byteLength / stride) : 0;
+
+					let internal = {
+						gl: 			gl,
+						bufferObject: 	bufferObject,
+						stride:          stride,
+						numVertices: 	numVertices,
+					};
+
+					if (vertexDescriptor) {
+						for (let prop in vertexDescriptor) {
+							this[prop] = vertexDescriptor[prop];
+						}
+					}
+
+					_.set(this, internal);
+				}
+
+				enable() {
+					let gl, bufferObject;
+					({gl, bufferObject} = _.get(this));
+
+					if (bufferObject != $.bufferObject) {
+						gl.bindBuffer(gl.ARRAY_BUFFER, bufferObject);
+
+						$.bufferObject = bufferObject;
+					}
+				}
+
+				disable() {
+					let gl, bufferObject;
+					({gl, bufferObject} = _.get(this));
+
+					if (bufferObject == $.bufferObject) {
+						gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+						$.bufferObject = bufferObject;
+					}
+				}
+
+				drawPoints() {
+					let gl, bufferObject, numVertices;
+					({gl, bufferObject, numVertices} = _.get(this));
+
+					if (bufferObject == $.bufferObject) {
+						gl.drawArrays(gl.POINTS, 0, numVertices);
+					}
+				}
+
+				drawTriangles() {
+					let gl, bufferObject, numVertices;
+					({gl, bufferObject, numVertices} = _.get(this));
+
+					if (bufferObject == $.bufferObject) {
+						gl.drawArrays(gl.TRIANGLES, 0, numVertices);
+					}
+				}
+
+				update(vertices) {
+					let gl, bufferObject, stride;
+					({gl, bufferObject, stride} = _.get(this));
+
+					let typedArray = (vertices instanceof Float32Array) ? vertices : new Float32Array(vertices);
+
+					let byteLength = typedArray.byteLength || 0;
+					let numVertices = stride ? Math.floor(byteLength / stride) : 0;
+					
+					gl.bindBuffer(gl.ARRAY_BUFFER, bufferObject);
+					gl.bufferData(gl.ARRAY_BUFFER, typedArray, gl.STREAM_DRAW);
+					gl.bindBuffer(gl.ARRAY_BUFFER, $.bufferObject);
+
+					_.get(this).numVertices = numVertices;
+				}
+			}
+
+			return VertexBuffer;
+		})();
+
+		///
+		const Texture = (function() {
+			let _ = new WeakMap();
+
+			let $ = Array(8);
+
+			class Texture {
+				constructor(gl) {
+					
+					_.set(this, {
+						gl: 			gl,
+						textureObject: 	gl.createTexture(),
+						width:          0,
+						height:         0,
+					});
+				}
+
+				get width () { return _.get(this).width;  }
+				get height() { return _.get(this).height; }
+
+				reserveImage(width, height) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, textureObject);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.bindTexture(gl.TEXTURE_2D, $[0]);
+
+					_.get(this).width  = width;
+					_.get(this).height = height;
+				}
+
+				updateImage(image) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, textureObject);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.bindTexture(gl.TEXTURE_2D, $[0]);
+
+					_.get(this).width  = image.width;
+					_.get(this).height = image.height;
+				}
+
+				updateData(width, height, data) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					let typedArray = (data instanceof Float32Array ? data : (data ? new Float32Array(data) : null));
+
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, textureObject);
+					gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, typedArray);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+					gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+					gl.bindTexture(gl.TEXTURE_2D, $[0]);
+
+					_.get(this).width  = width;
+					_.get(this).height = height;
+				}
+
+				enable(textureUnit) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					if (textureObject != $[textureUnit]) {
+						gl.activeTexture(gl.TEXTURE0 + textureUnit);
+						gl.bindTexture(gl.TEXTURE_2D, textureObject);
+						$[textureUnit] = textureObject;
+					}
+				}
+
+				disable(textureUnit) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					if (textureObject == $[textureUnit]) {
+						gl.activeTexture(gl.TEXTURE0 + textureUnit);
+						gl.bindTexture(gl.TEXTURE_2D, null);
+						$[textureUnit] = null;
+					}
+				}
+
+				attachToFramebuffer(textureUnit) {
+					let gl, textureObject;
+					({gl, textureObject} = _.get(this));
+
+					this.enable(textureUnit);
+					gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textureObject, 0);
+				}
+			}
+
+			return Texture;
+		})();
+
+		///
+		const FramebufferBuilder = (function() {
+			let _ = new WeakMap();
+
+			let $ = {
+				framebufferObject: null,
+			};
+
+			class FramebufferBuilder {
+				constructor(gl) {
+					_.set(this, {
+						gl: 				gl,
+						colorAttachment: 	null,
+					});
+				}
+
+				withColorAttachment(texture) {
+					_.get(this).colorAttachment = texture;
+					return this;
+				}
+
+				get framebuffer() {
+					let gl, colorAttachment;
+					({gl, colorAttachment} = _.get(this));
+
+					let framebufferObject = gl.createFramebuffer();
+					gl.bindFramebuffer(gl.FRAMEBUFFER, framebufferObject);
+					colorAttachment.attachToFramebuffer(0);
+					gl.bindFramebuffer(gl.FRAMEBUFFER, $.framebufferObject);
+
+					return new Framebuffer(gl, framebufferObject);
+				}
+			}
+
+			class Framebuffer {
+				constructor(gl, framebufferObject) {
+					_.set(this, {
+						gl: 			   gl,
+						framebufferObject: framebufferObject,
+					});
+				}
+
+				enable() {
+					let gl, framebufferObject;
+					({gl, framebufferObject} = _.get(this));
+
+					if ($.framebufferObject != framebufferObject) {
+						gl.bindFramebuffer(gl.FRAMEBUFFER, framebufferObject);
+						$.framebufferObject = framebufferObject;
+					}
+				}
+
+				disable() {
+					let gl, framebufferObject;
+					({gl, framebufferObject} = _.get(this));
+
+					if ($.framebufferObject == framebufferObject) {
+						gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+						$.framebufferObject = null;
+					}
+				}
+			}
+
+			return FramebufferBuilder;
+		})();
+		
+		///
+		const Renderer = (function() {
+			let _ = new WeakMap();
+
+			class Renderer {
+				constructor(canvasId) {
+					let canvas = document.getElementById(canvasId);
+
+					let contextAttributes = {
+						antialias: false,
+						depth:     false,
+					};
+
+					_.set(this, {
+						gl: canvas.getContext("webgl",              contextAttributes) ||
+							canvas.getContext("experimental-webgl", contextAttributes),
+
+						width:  canvas.width,
+						height: canvas.height,
+						});
+				}
+
+				get width () { return _.get(this).width;  }
+				get height() { return _.get(this).height; }
+
+				createShaderProgram(...selectors) {
+
+					let gl = _.get(this).gl;
+
+					let sources = [];
+
+					function kindOf(scriptType) {
+						switch (scriptType) {
+							case "x-shader/x-vertex": 	return gl.VERTEX_SHADER;
+							case "x-shader/x-fragment": return gl.FRAGMENT_SHADER;
+							default: 					return 0;
+						}
+					}
+
+					for (let selector of selectors) {
+						let script = document.querySelector(selector);
+						if (!script) {
+							throw Error(`Cannot find script: ${slector}`);
+						}
+
+						sources.push({
+							kind: kindOf(script.type),
+							text: script.innerHTML,
+						});
+					}
+
+					return new ShaderProgram(gl, sources);
+				}
+
+				createVertexDescriptor() {
+					return new VertexDescriptor(_.get(this).gl);
+				}
+
+				createVertexBuffer(vertices, vertexDescriptor) {
+
+					let gl = _.get(this).gl;
+
+					let typedArray = (vertices instanceof Float32Array) ? vertices : new Float32Array(vertices);
+					return new VertexBuffer(gl, typedArray, vertexDescriptor);
+				}
+
+				createImageTexture(imageURL) {
+					let gl = _.get(this).gl;
+
+					let texture = new Texture(gl);
+
+					let image = new Image();
+					image.onload = function() { texture.updateImage(image); };
+					image.src = imageURL;
+
+					return texture;
+				}
+
+				createEmptyImageTexture(width, height) {
+					let texture = new Texture(_.get(this).gl);
+					texture.reserveImage(width, height);
+					return texture;
+				}
+
+				createDataTexture(width, height, data = []) {
+					let gl = _.get(this).gl;
+					if (!gl.getExtension("OES_texture_float")) {
+						throw new Error("Data texture is not available, because OES_texture_float is not supported.");
+					}
+
+					let texture = new Texture(gl);
+					texture.updateData(width, height, data);
+
+					return texture;
+				}
+
+				createFramebufferBuilder() {
+					return new FramebufferBuilder(_.get(this).gl);
+				}
+
+				clearScreen(r = 0.0, g = 0.0, b = 0.0, a = 1.0) {
+					let gl = _.get(this).gl;
+
+					gl.clearColor(r, g, b, a);
+					gl.clear(gl.COLOR_BUFFER_BIT);
+				}
+			}
+
+			return Renderer;
+		})();
+
+		///
+		function main() {
+			try {
+				let renderer = new Renderer("demoCanvas");
+
+				let copyProgram 	 = renderer.createShaderProgram("#vsCopy",      "#fsCopy");
+				let advectionProgram = renderer.createShaderProgram("#vsAdvection", "#fsAdvection");
+				let renderProgram    = renderer.createShaderProgram("#vsRender",    "#fsRender");
+
+				let vertexDescriptor = renderer.createVertexDescriptor().
+					withAttribute("vertexPosition", Float2);
+
+				let screenTriangle = renderer.createVertexBuffer([
+						-1.0, -1.0,
+					    -1.0,  3.0,
+					     3.0, -1.0,
+					], vertexDescriptor);
+
+				// When released: 
+				let uvTexture = renderer.createImageTexture("world54km_cuvt_10m_cur.png");
+
+				let texture   = renderer.createEmptyImageTexture(renderer.width, renderer.height);
+				//let uvTexture = renderer.createImageTexture(""");
+
+				let textures = [
+					renderer.createEmptyImageTexture(renderer.width, renderer.height),
+					renderer.createEmptyImageTexture(renderer.width, renderer.height)
+				]; 
+				let textureIdx = 0;
+
+				let particleDataTexture = renderer.createDataTexture(2, 2, [
+					-0.5,  0.5, 0.0, 0.0,
+					 0.5,  0.5, 0.0, 0.0,
+					 0.5, -0.5, 0.0, 0.0,
+					-0.5, -0.5, 0.0, 0.0,
+					]);
+
+				let drawFramebuffer = renderer.createFramebufferBuilder()
+					.withColorAttachment(textures[0])
+					.framebuffer;
+
+				let advectionFramebuffer = renderer.createFramebufferBuilder()
+					.withColorAttachment(textures[1])
+					.framebuffer;
+
+				let framebuffer = renderer.createFramebufferBuilder()
+					.withColorAttachment(texture)
+					.framebuffer;
+
+				framebuffer.enable();
+				renderer.clearScreen();
+				framebuffer.disable();
+
+				let requestAnimationFrame = window.requestAnimationFrame 	   || window.mozRequestAnimationFrame ||
+											window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+				let particles = Array(10000).fill().map(_ => Math.random() * 2.0 - 1.0);
+				let vertexBuffer = renderer.createVertexBuffer(particles, vertexDescriptor);
+				
+				function fract(x) {
+					return x - Math.floor(x);
+				}
+
+				function update() {
+					requestAnimationFrame(update);
+
+					for (let i in particles) {
+						particles[i] += 0.001;
+						if (particles[i] > 1.0) {
+							particles[i] = -1.0 + fract(particles[i]);
+						}
+					}
+					vertexBuffer.update(particles);
+
+					renderer.clearScreen(1.0);
+
+					// Draw particles.
+					drawFramebuffer.enable();
+					renderProgram.enable();
+					vertexBuffer.enable();
+					renderProgram.vertexPosition = vertexBuffer.vertexPosition;
+					renderProgram.texture        = uvTexture;
+					renderProgram.resolution     = [uvTexture.width, uvTexture.height];
+					vertexBuffer.drawPoints();
+					drawFramebuffer.disable();
+
+					// Draw advection.
+					advectionFramebuffer.enable();
+					advectionProgram.enable();
+					screenTriangle.enable();
+					advectionProgram.vertexPosition = screenTriangle.vertexPosition;
+					advectionProgram.uvTexture      = uvTexture;
+					advectionProgram.texture        = textures[0];
+					advectionProgram.resolution     = [renderer.width, renderer.height];
+					screenTriangle.drawTriangles();
+					advectionFramebuffer.disable();
+
+					// Copy advection back to particles.
+					drawFramebuffer.enable();
+					copyProgram.enable();
+					screenTriangle.enable();
+					copyProgram.vertexPosition = screenTriangle.vertexPosition;
+					copyProgram.texture        = textures[1];
+					copyProgram.resolution     = [renderer.width, renderer.height];
+					screenTriangle.drawTriangles();
+					drawFramebuffer.disable();
+
+					// Copy advection on screen.
+					screenTriangle.drawTriangles();
+				}
+
+				update();
+			} catch (e) {
+				alert(e.message || e);
+			}
+		}		
+	</script>
+</head>
+
+<body onload="main();">
+	<canvas id="demoCanvas" width="640" height="480">
+		Your browser doesn't support HTML5 <code>&lt;canvas&gt;</code> element.
+	</canvas>
+</body>
+
+</html>
