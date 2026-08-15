@@ -162,10 +162,10 @@
                 const drawStats = () => {
                     gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
                     gfx.fillRect(0, 0, 200, 200)
+                    gfx.fillStyle = 'black'
+                    gfx.fillText(`Vertex Count: ${vertexCount}`, 24, 24, 200)
                     gfx.fillStyle = 'white'
-                    gfx.strokeStyle = 'black'
                     gfx.fillText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
-                    gfx.strokeText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
                 }
 
                 const updateGameWorld = () => {
