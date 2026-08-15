@@ -67,7 +67,7 @@
                     this.add = (x, y) => {
                         if (x instanceof vec2) {
                             this.x += x.x
-                            this.y += y.y
+                            this.y += x.y
                             return this
                         }
                         this.x += x
