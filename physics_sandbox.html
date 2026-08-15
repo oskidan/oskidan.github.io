@@ -64,10 +64,6 @@
                     this.x = x
                     this.y = y
 
-                    this.zero = () => {
-                        return new vec2(0, 0)
-                    }
-
                     this.add = (x, y) => {
                         if (x instanceof vec2) {
                             this.x += x.x
@@ -99,6 +95,9 @@
                     this.copy = () => {
                         return new vec2(this.x, this.y)
                     }
+                }
+                vec2.zero = () => { 
+                    return new vec2(0, 0)
                 }
 
                 var
