@@ -117,12 +117,11 @@
                     vertexCount += 1
                     vertexAcceleration.push(vec2.zero())
                     if (x instanceof vec2) {
-                        vertexCurrPosition.push(x)
-                        vertexPrevPosition.push(x)
+                        vertexCurrPosition.push(x.copy())
+                        vertexPrevPosition.push(x.copy())
                     } else {
-                        const vertexPosition = new vec2(x, y)
-                        vertexCurrPosition.push(vertexPosition)
-                        vertexPrevPosition.push(vertexPosition)
+                        vertexCurrPosition.push(new vec2(x, y))
+                        vertexPrevPosition.push(new vec2(x, y))
                     }
                 }
 
