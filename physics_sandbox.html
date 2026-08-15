@@ -2,9 +2,25 @@
 <html>
     <head>
         <title>Physics Sandbox</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            body, html {
+                height: 100%;
+                overflow: hidden;
+            }
+            #canvas {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+        </style>
     </head>
     <body>
-        <canvas id="canvas" width="100%" height="100%">
+        <canvas id="canvas">
             Your browser doesn't support canvas.
         </canvas>
         <script>
@@ -85,9 +101,10 @@
                     }
                 }
 
-                const
+                var
                     /** @type{number} */
-                    vertexCount = 0,
+                    vertexCount = 0
+                const
                     /** @type{vec2[]} */
                     vertexCurrPosition = [],
                     /** @type{vec2[]} */
