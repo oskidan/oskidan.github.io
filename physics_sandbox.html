@@ -167,7 +167,7 @@
                 const drawGameWorld = () => {
                     gfx.clearRect(0, 0, backBuffer.width, backBuffer.height)
                     drawVertices()
-                    frontBuffer.drawImage(backBuffer)
+                    frontBuffer.drawImage(backBuffer, 0, 0)
                 }
 
                 /** @param{DOMHighResTimeStamp} currTimestamp */
