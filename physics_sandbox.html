@@ -159,6 +159,15 @@
                     }
                 }
 
+                const drawStats = () => {
+                    gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
+                    gfx.fillRect(0, 0, 200, 200)
+                    gfx.fillStyle = 'white'
+                    gfx.strokeStyle = 'black'
+                    gfx.fillText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
+                    gfx.strokeText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
+                }
+
                 const updateGameWorld = () => {
                     applyForces()
                     updateVertices()
@@ -170,6 +179,7 @@
                     gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
                     // Draw the world.
                     drawVertices()
+                    drawStats()
                     // Present the back buffer on screen.
                     frontBuffer.drawImage(backBuffer, 0, 0)
                 }
