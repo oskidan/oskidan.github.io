@@ -28,8 +28,14 @@
                 /** @type{HTMLCanvasEvlement} */
                 const canvas = document.querySelector("#canvas")
 
+                /** @type{HTMLCanvasEvlement} */
+                const backBuffer = document.createElement('canvas')
+
                 /** @type{CanvasRenderingContext2D} */
-                const gfx = canvas.getContext("2d")
+                const frontBuffer = canvas.getContext("2d")
+                
+                /** @type{CanvasRenderingContext2D} */
+                const gfx = backBuffer.getContext("2d")
 
                 /** @type{number} The target FPS. */
                 const fps = 30
@@ -159,7 +165,9 @@
                 }
 
                 const drawGameWorld = () => {
+                    gfx.clearRect(0, 0, backBuffer.width, backBuffer.height)
                     drawVertices()
+                    frontBuffer.drawImage(backBuffer)
                 }
 
                 /** @param{DOMHighResTimeStamp} currTimestamp */
@@ -188,6 +196,8 @@
                     if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
                       canvas.width = displayWidth;
                       canvas.height = displayHeight;
+                      backBuffer.width = displayWidth
+                      backBuffer.height = displayHeight
                     }
                 }
 
