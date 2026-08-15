@@ -171,6 +171,18 @@
                     window.requestAnimationFrame(gameLoop)
                 }
 
+                const resizeCavnas = () => {
+                    // 1. Get the actual display size from the browser layout
+                    const displayWidth = canvas.clientWidth;
+                    const displayHeight = canvas.clientHeight;
+
+                    // 2. Sync internal drawing resolution to match display size
+                    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+                      canvas.width = displayWidth;
+                      canvas.height = displayHeight;
+                    }
+                }
+
                 /**
                  * @param{MouseEvent}
                  */
@@ -181,6 +193,11 @@
                     addVertex(mousePos)
                 }
 
+                window.onresize = (event) => {
+                    resizeCavnas()
+                }
+
+                resizeCavnas()
                 gameLoop()
             }
         </script>
