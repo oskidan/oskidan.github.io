@@ -219,11 +219,12 @@
                 const resizeCavnas = () => {
                     // Get the DPR and size of the canvas
                     const dpr = window.devicePixelRatio
-                    const rect = canvas.getBoundingClientRect()
+                    const displayWidth = canvas.clientWidth
+                    const displayHeight = canvas.clientHeight
 
                     // Set the "actual" size of the canvas
-                    canvas.width = rect.width * dpr
-                    canvas.height = rect.height * dpr
+                    canvas.width = canvas.clientWidth * dpr
+                    canvas.height = canvas.clientHeight * dpr
                     backBuffer.width = canvas.width
                     backBuffer.height = canvas.height
 
@@ -231,8 +232,8 @@
                     gfx.scale(dpr, dpr)
 
                     // Set the "drawn" size of the canvas
-                    canvas.style.width = `${rect.width}px`
-                    canvas.style.height = `${rect.height}px`
+                    canvas.style.width = `${displayWidth}px`
+                    canvas.style.height = `${displayHeight}px`
                 }
 
                 const resizeCavnasOld = () => {
