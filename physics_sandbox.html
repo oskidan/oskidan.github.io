@@ -32,7 +32,7 @@
                     const r = randomNumberBetween(100, 255)
                     const g = randomNumberBetween(100, 255)
                     const b = randomNumberBetween(100, 255)
-                    gfx.fill = `rgb(${r}, ${g}, ${b})`
+                    gfx.fillStyle = `rgb(${r}, ${g}, ${b})`
                     gfx.fillRect(0, 0, 100, 100)
                     window.requestAnimationFrame(gameLoop)
                 }
