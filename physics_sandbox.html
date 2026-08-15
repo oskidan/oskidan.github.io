@@ -15,8 +15,17 @@
                 /** @type{CanvasRenderingContext2D} */
                 const gfx = canvas.getContext("2d")
 
+                /** @type{number} The target FPS. */
+                const fps = 30
+
                 /** @type{number} The duration of a simulation tick in milliseconds. */
-                const millisPerTick = 1000 / 30.0
+                const millisPerTick = 1000 / fps
+
+                /** @type{number} The duration of a simulation tick in seconds. */
+                const dt = 1 / fps
+
+                /** @type{number} The dt^2. */
+                const dtSquared = dt * dt
 
                 /** @type{DOMHighResTimeStamp} */
                 var prevTimestamp = performance.now()
@@ -30,22 +39,109 @@
                     return start + Math.random() * (stop - start)
                 }
 
-                const updateGameWorld = () => {
+                /**
+                 * @class
+                 * @param{number} x - The x coordinate of the vector.
+                 * @param{number} y - The y coordinate of the vector.
+                 */
+                const vec2 = (x, y) => {
+                    this.x = x
+                    this.y = y
 
+                    this.zero = () => {
+                        return new vec2(0, 0)
+                    }
+
+                    this.add = (x, y) => {
+                        if (x instanceof vec2) {
+                            this.x += x.x
+                            this.y += y.y
+                            return this
+                        }
+                        this.x += x
+                        this.y += y
+                        return this
+                    }
+
+                    this.sub = (x, y) => {
+                        if (x instanceof vec2) {
+                            this.x -= x.x
+                            this.y -= x.y
+                            return this
+                        }
+                        this.x -= x
+                        this.y -= y
+                        return this
+                    }
+
+                    this.mul = (s) => {
+                        this.x *= s
+                        this.y *= s
+                        return this
+                    }
+
+                    this.copy = () => {
+                        return new vec2(this.x, this.y)
+                    }
+                }
+
+                const
+                    /** @type{number} */
+                    vertexCount = 0,
+                    /** @type{vec2[]} */
+                    vertexCurrPosition = [],
+                    /** @type{vec2[]} */
+                    vertexPrevPosition = [],
+                    /** @type{vec2[]} */
+                    vertexAcceleration = []
+
+                const addVertex = (x, y) => {
+                    vertexCount += 1
+                    vertexAcceleration.push(vec2.zero())
+                    if (x instanceof vec2) {
+                        vertexCurrPosition.push(x)
+                        vertexPrevPosition.push(x)
+                    } else {
+                        const vertexPosition = new vec2(x, y)
+                        vertexCurrPosition.push(vertexPosition)
+                        vertexPrevPosition.push(vertexPosition)
+                    }
+                }
+
+                const updateVertices = () => {
+                    for (var i = 0; i < vertexCount; i++) {
+                        // Stormer-Verlet integration:
+                        //  pos = pos * 2 - prev_pos + acc * dt * dt
+                        const vertexPosition = vertexCurrPosition[i].copy()
+                        vertexCurrPosition[i]
+                            .mul(2)
+                            .sub(vertexPrevPosition[i])
+                            .add(vertexAcceleration[i].mul(dtSquared))
+                        vertexPrevPosition[i] = vertexPosition
+                    }
+                }
+
+                const drawVertices = () => {
+                    gfx.fillStyle = 'red'
+                    for (var i = 0; i < vertexCount; i++) {
+                        const cornerTL = vertexCurrPosition[i].copy()
+                        cornerTL.sub(8, 8)
+                        gfx.fillRect(cornerTL.x, cornerTL.y, 16, 16)
+                    }
+                }
+
+                const updateGameWorld = () => {
+                    updateVertices()
                 }
 
                 const drawGameWorld = () => {
-                    const r = randomNumberBetween(100, 255)
-                    const g = randomNumberBetween(100, 255)
-                    const b = randomNumberBetween(100, 255)
-                    gfx.fillStyle = `rgb(${r}, ${g}, ${b})`
-                    gfx.fillRect(0, 0, 100, 100)
+                    drawVerteices()
                 }
 
-                /** @param{DOMHighResTimeStamp} currentTimestamp */
-                const gameLoop = (currentTimestamp) => {
+                /** @param{DOMHighResTimeStamp} currTimestamp */
+                const gameLoop = (currTimestamp) => {
                     // Update the game time.
-                    const elapsedMillis = currentTimestamp - prevTimestamp
+                    const elapsedMillis = currTimestamp - prevTimestamp
                     const tickCount = Math.floor(elapsedMillis / millisPerTick)
                     prevTimestamp += (tickCount * millisPerTick)
                     // Update the game world as many times as many ticks have elapsed.
@@ -57,6 +153,16 @@
                         drawGameWorld()
                     }
                     window.requestAnimationFrame(gameLoop)
+                }
+
+                /**
+                 * @param{MouseEvent}
+                 */
+                canvas.onmousedown = (event) => {
+                    const mousePos = new vec2(event.clientX, event.clientY)
+                    const canvasRect = canvas.getBoundingClientRect()
+                    mousePos.sub(canvasRect.x, canvasRect.y)
+                    addVertex(mousePos)
                 }
 
                 gameLoop()
