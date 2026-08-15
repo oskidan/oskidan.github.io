@@ -104,6 +104,8 @@
                     /** @type{number} */
                     vertexCount = 0
                 const
+                    /** @type{vec2} */
+                    gravity = new vec2(0, 3),
                     /** @type{vec2[]} */
                     vertexCurrPosition = [],
                     /** @type{vec2[]} */
@@ -121,6 +123,12 @@
                         const vertexPosition = new vec2(x, y)
                         vertexCurrPosition.push(vertexPosition)
                         vertexPrevPosition.push(vertexPosition)
+                    }
+                }
+
+                const applyForces = () => {
+                    for (var i = 0; i < vertexCount; i++) {
+                        vertexAcceleration[i] = gravity.copy()
                     }
                 }
 
