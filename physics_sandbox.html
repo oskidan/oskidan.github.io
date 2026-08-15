@@ -46,7 +46,7 @@
                 const gameLoop = (currentTimestamp) => {
                     // Update the game time.
                     const elapsedMillis = currentTimestamp - prevTimestamp
-                    const tickCount = Math.floor(elapssedMillis / millisPerTick)
+                    const tickCount = Math.floor(elapsedMillis / millisPerTick)
                     prevTimestamp += (tickCount * millisPerTick)
                     // Update the game world as many times as many ticks have elapsed.
                     for (var i = 0; i < tickCount; i++) {
