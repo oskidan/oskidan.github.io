@@ -165,8 +165,12 @@
                 }
 
                 const drawGameWorld = () => {
-                    gfx.clearRect(0, 0, backBuffer.width, backBuffer.height)
+                    // Clear the back buffer.
+                    gfx.fillStyle = 'rgb(200, 100, 255)'
+                    gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
+                    // Draw the world.
                     drawVertices()
+                    // Present the back buffer on screen.
                     frontBuffer.drawImage(backBuffer, 0, 0)
                 }
 
