@@ -32,7 +32,7 @@
                 const backBuffer = document.createElement('canvas')
 
                 /** @type{CanvasRenderingContext2D} */
-                const frontBuffer = canvas.getContext("2d")
+                const frontBuffer = canvas.getContext("2d", { alpha: false })
                 
                 /** @type{CanvasRenderingContext2D} */
                 const gfx = backBuffer.getContext("2d")
@@ -163,7 +163,7 @@
                     gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
                     gfx.fillRect(0, 0, 200, 200)
                     gfx.fillStyle = 'black'
-                    gfx.fillText(`Vertex Count: ${vertexCount}`, 24, 24, 200)
+                    gfx.fillText(`Vertex Count: ${vertexCount}`, 22, 22, 200)
                     gfx.fillStyle = 'white'
                     gfx.fillText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
                 }
