@@ -15,6 +15,9 @@
                 /** @type{CanvasRenderingContext2D} */
                 const gfx = canvas.getContext("2d")
 
+                /** @type{number} The duration of a simulation tick in milliseconds. */
+                const millisPerTick = 1000 / 30.0
+
                 /** @type{DOMHighResTimeStamp} */
                 var prevTimestamp = performance.now()
 
@@ -27,13 +30,32 @@
                     return start + Math.random() * (stop - start)
                 }
 
-                /** @param{DOMHighResTimeStamp} currentTimestamp */
-                const gameLoop = (currentTimestamp) => {
+                const updateGameWorld = () => {
+
+                }
+
+                const drawGameWorld = () => {
                     const r = randomNumberBetween(100, 255)
                     const g = randomNumberBetween(100, 255)
                     const b = randomNumberBetween(100, 255)
                     gfx.fillStyle = `rgb(${r}, ${g}, ${b})`
                     gfx.fillRect(0, 0, 100, 100)
+                }
+
+                /** @param{DOMHighResTimeStamp} currentTimestamp */
+                const gameLoop = (currentTimestamp) => {
+                    // Update the game time.
+                    const elapsedMillis = currentTimestamp - prevTimestamp
+                    const tickCount = Math.floor(elapssedMillis / millisPerTick)
+                    prevTimestamp += (tickCount * millisPerTick)
+                    // Update the game world as many times as many ticks have elapsed.
+                    for (var i = 0; i < tickCount; i++) {
+                        updateGameWorld()
+                    }
+                    // Render the game world once.
+                    if (tickCount != 0) {
+                        drawGameWorld()
+                    }
                     window.requestAnimationFrame(gameLoop)
                 }
 
