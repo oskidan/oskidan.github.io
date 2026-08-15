@@ -22,7 +22,7 @@
                 const gameLoop = (currentTimestamp) => {
                     gfx.fill = `rgb(${Math.random(255)}, ${Math.random(255)}, ${Math.random(255)})`
                     gfx.fillRect(0, 0, 100, 100)
-                    window.requestAnimationFrame(update)
+                    window.requestAnimationFrame(gameLoop)
                 }
 
                 gameLoop()
