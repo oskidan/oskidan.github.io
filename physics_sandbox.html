@@ -11,9 +11,21 @@
             window.onload = (event) => {
                 /** @type{HTMLCanvasEvlement} */
                 const canvas = document.querySelector("#canvas")
+
                 /** @type{CanvasRenderingContext2D} */
                 const gfx = canvas.getContext("2d")
-                gfx.fillRect(0, 0, 100, 100)
+
+                /** @type{DOMHighResTimeStamp} */
+                var prevTimestamp = performance.now()
+
+                /** @param{DOMHighResTimeStamp} currentTimestamp */
+                const gameLoop = (currentTimestamp) => {
+                    gfx.fill = `rgb(${Math.random(255)}, ${Math.random(255)}, ${Math.random(255)})`
+                    gfx.fillRect(0, 0, 100, 100)
+                    widnow.requestAnimationFrame(update)
+                }
+
+                gameLoop()
             }
         </script>
     </body>
