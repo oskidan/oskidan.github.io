@@ -18,9 +18,21 @@
                 /** @type{DOMHighResTimeStamp} */
                 var prevTimestamp = performance.now()
 
+                /** 
+                 * @param{number} start - The lower bound of the range of numbers.
+                 * @param{number} stop  - The upper bound of the range of numbers.
+                 * @return{number} A number number in the range from `start` to `stop`, inclusive.
+                 */
+                const randomNumberBetween = (start, stop) => {
+                    return start + Math.random() * (stop - start)
+                }
+
                 /** @param{DOMHighResTimeStamp} currentTimestamp */
                 const gameLoop = (currentTimestamp) => {
-                    gfx.fill = `rgb(${Math.random(255)}, ${Math.random(255)}, ${Math.random(255)})`
+                    const r = randomNumberBetween(100, 255)
+                    const g = randomNumberBetween(100, 255)
+                    const b = randomNumberBetween(100, 255)
+                    gfx.fill = `rgb(${r}, ${g}, ${b})`
                     gfx.fillRect(0, 0, 100, 100)
                     window.requestAnimationFrame(gameLoop)
                 }
