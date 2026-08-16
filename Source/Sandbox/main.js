@@ -1,6 +1,7 @@
 import { testVector2D } from "./Math/Vector2D.js";
 import { testTime, Time } from "./Physics/Time.js";
 import { testParticle, Particle } from "./Physics/Particle.js";
+import { Spring } from "./Physics/Spring.js";
 import { Renderer } from "./Rendering/Renderer.js";
 
 testVector2D();
