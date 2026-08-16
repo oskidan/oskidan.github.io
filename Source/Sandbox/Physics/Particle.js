@@ -2,16 +2,17 @@ import { Vector2D } from "../Math/Vector2D.js";
 
 // A point particle (also known as a "point body").
 export class Particle {
-  constructor(x, y) {
+  constructor(x, y, mass) {
     if (x instanceof Vector2D) {
       this.currPosition = x.copy();
       this.prevPosition = x.copy();
+      this.mass = y || 1;
     } else {
       this.currPosition = new Vector2D(x, y);
       this.prevPosition = new Vector2D(x, y);
+      this.mass = mass || 1;
     }
     this.acceleration = Vector2D.zero();
-    this.mass = 1;
     this.isPinned = false;
   }
   // Returns 0 if the particle isPinned, or its mass otherwise.
@@ -20,16 +21,15 @@ export class Particle {
   }
   // Updates particle by integrating its motion with
   // the Stormer-Verlet method:
-  //    pos = pos * 2 - prev_pos + acc * dt * dt
+  //    pos = pos + (pos - prev_pos) * damping + acc * dt * dt
+  // where dapming = 0.98.
   update(time) {
     if (this.isPinned) {
       return;
     }
     const positionBeforeUpdate = this.currPosition.copy();
-    this.currPosition
-      .mul(2)
-      .sub(this.prevPosition)
-      .add(this.acceleration.mul(time.dtSquared));
+    const velocity = this.currPosition.copy().sub(this.prevPosition).mul(0.98);
+    this.currPosition.add(velocity).add(this.acceleration.mul(time.dtSquared));
     this.prevPosition = positionBeforeUpdate;
     this.acceleration.set(0, 0);
     return this;
@@ -37,7 +37,7 @@ export class Particle {
   // Applies force to the particle.
   applyForce(x, y) {
     if (this.isPinned) {
-      return
+      return;
     }
     const force = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
     this.acceleration.add(force.div(this.mass));
@@ -46,7 +46,7 @@ export class Particle {
   // Applies acceleration to the particle.
   applyAccel(x, y) {
     if (this.isPinned) {
-      return
+      return;
     }
     const accel = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
     this.acceleration.add(accel);

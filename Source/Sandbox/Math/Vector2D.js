@@ -37,7 +37,7 @@ export class Vector2D {
     return this;
   }
   // Negates this vector.
-  flip() {
+  flipDirection() {
     this.x = -this.x;
     this.y = -this.y;
     return this;
