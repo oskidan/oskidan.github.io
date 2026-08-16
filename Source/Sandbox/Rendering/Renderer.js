@@ -23,11 +23,27 @@ export class Renderer {
     this.backBuffer = backBuffer;
     this.gfx = gfx;
   }
+  // Starts a new frame. Clears the screen.
   beginFrame() {
     this.gfx.fillStyle = "#cae0fd";
     this.gfx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
+  // Ends the current frame. Swaps the rendered image onto the screen.
   endFrame() {
     this.frontBuffer.drawImage(this.backBuffer, 0, 0);
+  }
+  // Draws given particles as 4x4 boxes.
+  drawParticles(particles) {
+    const particleExtent = 2;
+    const particleSize = particleExtent * 2;
+    this.gfx.fillStyle = "#ff00ff";
+    for (const particle of particles) {
+      this.gfx.fillRect(
+        particle.currPosition.x - particleExtent,
+        particle.currPosition.y - particleExtent,
+        particleSize,
+        particleSize,
+      );
+    }
   }
 }
