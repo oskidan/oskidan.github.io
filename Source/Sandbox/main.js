@@ -19,6 +19,7 @@ const particles = [
 
 const gameUpdate = () => {
   for (const particle of particles) {
+    particle.applyForce(0, 3); // Gravity.
     particle.update(time);
   }
 };
