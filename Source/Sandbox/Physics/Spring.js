@@ -22,8 +22,8 @@ export class Spring {
     const springLength = springVec.magnitude();
     const springDispl = Math.abs(this.restLength - springLength);
     const springForce = springDir.mul(springDispl * this.stiffness);
-    this.p0.applyForce(springForce.copy().flip());
-    this.p1.applyForce(springForce);
+    this.p0.applyForce(springForce.copy().mul(-p0Contrib));
+    this.p1.applyForce(springForce.mul(p1Contrib));
     this.deformation = springDispl / this.restLength;
   }
 }
