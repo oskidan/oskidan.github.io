@@ -19,12 +19,12 @@ const particles = [
 ];
 
 const springs = [
-  new Spring(particles[0], particles[1], 0.99),
-  new Spring(particles[1], particles[2], 0.99),
-  new Spring(particles[2], particles[3], 0.99),
-  new Spring(particles[3], particles[0], 0.99),
-  new Spring(particles[0], particles[2], 0.99),
-  new Spring(particles[1], particles[3], 0.99),
+  new Spring(particles[0], particles[1]),
+  new Spring(particles[1], particles[2]),
+  new Spring(particles[2], particles[3]),
+  new Spring(particles[3], particles[0]),
+  new Spring(particles[0], particles[2]),
+  new Spring(particles[1], particles[3]),
 ];
 
 const gameUpdate = () => {
