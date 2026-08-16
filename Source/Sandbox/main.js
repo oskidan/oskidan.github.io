@@ -30,15 +30,18 @@ const springs = [
 const gameUpdate = () => {
   for (const particle of particles) {
     // Gravity. Please note that it cannot be modelled as a force,
-    // because all objects accelerate due to gravity the same amount.
+    // because all objects accelerate the same amount due to gravity.
     particle.applyAccel(0, 9.8);
     particle.update(time);
   }
-  for (const spring of springs) {
-    spring.update();
-  }
-  for (const particle of particles) {
-    particle.update(time);
+  // Apply constraints:
+  for (var i = 0; i < 3; i++) {
+    for (const spring of springs) {
+      spring.update();
+    }
+    for (const particle of particles) {
+      particle.update(time);
+    }
   }
 };
 
