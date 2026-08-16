@@ -1,1 +1,3 @@
-console.log("Hello, World!");
+import { testVector2D } from "./Vector2D.js";
+
+testVector2D();
