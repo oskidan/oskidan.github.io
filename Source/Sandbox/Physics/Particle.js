@@ -45,6 +45,7 @@ export class Particle {
 }
 
 export const testParticle = () => {
+  // Once constructed, the particle is stationary.
   var sut = new Particle(0, 0);
   console.assert(
     sut.currPosition.distanceTo(0, 0) == 0,
@@ -58,6 +59,8 @@ export const testParticle = () => {
     sut.acceleration.distanceTo(0, 0) == 0,
     `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
   );
+
+  // If updated, such particle will not move.
   const mockTime = { dtSquared: 1, elapsedTicks: 1 };
   sut.update(mockTime);
   console.assert(
@@ -72,6 +75,9 @@ export const testParticle = () => {
     sut.acceleration.distanceTo(0, 0) == 0,
     `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
   );
+
+  // If its previous and current positions are different, but it has no acceleartion, then
+  // the particle will move with a constant speed.
   sut.currPosition.set(0, 1);
   sut.update(mockTime);
   console.assert(
@@ -86,6 +92,8 @@ export const testParticle = () => {
     sut.acceleration.distanceTo(0, 0) == 0,
     `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
   );
+
+  // Update resets the acceleration. Acceleration determines the change in particle velocity.
   sut.acceleration.set(0, 1);
   sut.update(mockTime);
   console.assert(
@@ -97,7 +105,7 @@ export const testParticle = () => {
     `Expected sut.prevPosition: ${sut.prevPosition.describe()}. Got: ${sut.prevPosition.describe()}`,
   );
   console.assert(
-    sut.acceleration.distanceTo(0, 1) == 0,
+    sut.acceleration.distanceTo(0, 0) == 0,
     `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
   );
 };
