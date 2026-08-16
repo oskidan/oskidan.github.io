@@ -58,7 +58,7 @@ export class Vector2D {
   }
   // Normalizes this vector. If this vector is a zero vector,
   // when normalized, it remains to be a zero vector.
-  noarmalize() {
+  normalize() {
     const magnitude = this.magnitude();
     if (magnitude == 0) {
       this.set(0, 0);
