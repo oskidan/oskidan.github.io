@@ -39,3 +39,6 @@ const gameLoop = (currMillis) => {
   }
   window.requestAnimationFrame(gameLoop);
 };
+
+// Run the game.
+gameLoop()
