@@ -1,3 +1,5 @@
+import { Vector2D } from "../Math/Vector2D.js";
+
 // A point particle (also known as a "point body").
 export class Particle {
   constructor(x, y) {
