@@ -18,7 +18,7 @@ export class Spring {
     const p1Contrib = p1Mass / totalMass;
     // p0 <- p1
     const springVec = this.p0.currPosition.copy().sub(this.p1.currPosition);
-    const springDir = springVec.normalize();
+    const springDir = springVec.copy().normalize();
     const springLength = springVec.magnitude();
     const springDispl = Math.abs(this.restLength - springLength);
     const springForce = springDir.mul(springDispl * this.stiffness);
