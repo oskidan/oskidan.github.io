@@ -53,5 +53,7 @@ const gameLoop = (currMillis) => {
   window.requestAnimationFrame(gameLoop);
 };
 
+// Pin this particle so it does not move.
+particles[1].isPinned = true;
 // Run the game.
 gameLoop();

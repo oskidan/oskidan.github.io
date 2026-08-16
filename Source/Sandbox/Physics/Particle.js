@@ -22,6 +22,9 @@ export class Particle {
   // the Stormer-Verlet method:
   //    pos = pos * 2 - prev_pos + acc * dt * dt
   update(time) {
+    if (this.isPinned) {
+      return;
+    }
     const positionBeforeUpdate = this.currPosition.copy();
     this.currPosition
       .mul(2)
