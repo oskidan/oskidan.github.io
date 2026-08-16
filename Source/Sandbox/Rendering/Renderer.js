@@ -21,4 +21,11 @@ export class Renderer {
         this.backBuffer = backBuffer
         this.gfx = gfx
     }
+    beginFrame() {
+        this.gfx.fillStyle = '#cae0fd'
+        this.gfx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    endFrame() {
+        this.frontBuffer.drawImage(this.backBuffer)
+    }
 }

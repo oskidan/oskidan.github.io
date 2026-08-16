@@ -8,3 +8,5 @@ testTime();
 testParticle();
 
 const renderer = new Renderer("#canvas");
+renderer.beginFrame()
+renderer.endFrame()
