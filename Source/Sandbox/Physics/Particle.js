@@ -23,7 +23,7 @@ export class Particle {
   }
 }
 
-const testParticle = () => {
+export const testParticle = () => {
   var sut = new Particle(0, 0);
   console.assert(
     sut.currPosition.distanceTo(0, 0) == 0,
