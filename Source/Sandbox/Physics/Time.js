@@ -3,7 +3,8 @@ export class Time {
     this.fps = fps || 30;
     this.dt = 1 / this.fps;
     this.dtSquared = this.dt * this.dt;
-    this.lastTickMillis = lastTickMillis || performance.now();
+    this.lastTickMillis =
+      lastTickMillis === undefined ? performance.now() : lastTickMillis;
     this.millisPerTick = 1000 / fps;
     this.elapsedTicks = 0;
   }
