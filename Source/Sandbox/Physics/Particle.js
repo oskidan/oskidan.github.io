@@ -43,6 +43,15 @@ export class Particle {
     this.acceleration.add(force.div(this.mass));
     return this;
   }
+  // Applies acceleration to the particle.
+  applyAccel(x, y) {
+    if (this.isPinned) {
+      return
+    }
+    const accel = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
+    this.acceleartion.add(accel);
+    return this;
+  }
 }
 
 export const testParticle = () => {

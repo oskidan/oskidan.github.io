@@ -23,6 +23,8 @@ const springs = [
   new Spring(particles[1], particles[2]),
   new Spring(particles[2], particles[3]),
   new Spring(particles[3], particles[0]),
+  new Spring(particles[0], particles[2]),
+  new Spring(particles[1], particles[3]),
 ];
 
 const gameUpdate = () => {
@@ -30,7 +32,9 @@ const gameUpdate = () => {
     spring.update();
   }
   for (const particle of particles) {
-    particle.applyForce(0, 3); // Gravity.
+    // Gravity. Please note that it cannot be modelled as a force,
+    // because all objects accelerate due to gravity the same amount.
+    particle.applyAccel(0, 3);
     particle.update(time);
   }
 };
