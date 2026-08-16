@@ -41,4 +41,4 @@ const gameLoop = (currMillis) => {
 };
 
 // Run the game.
-gameLoop()
+gameLoop();

@@ -10,7 +10,8 @@ export class Time {
   }
   // Updates the game time with a given current timestamp in milliseconds.
   update(currMillis) {
-    const elapsedMillis = (currMillis || performance.now()) - this.lastTickMillis;
+    const elapsedMillis =
+      (currMillis || performance.now()) - this.lastTickMillis;
     this.elapsedTicks = Math.floor(elapsedMillis / this.millisPerTick);
     this.lastTickMillis += this.elapsedTicks * this.millisPerTick;
     return this;

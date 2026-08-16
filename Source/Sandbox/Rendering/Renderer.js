@@ -22,6 +22,21 @@ export class Renderer {
     this.frontBuffer = frontBuffer;
     this.backBuffer = backBuffer;
     this.gfx = gfx;
+    this.installEventListeners();
+  }
+  // Installs event listeners.
+  installEventListeners() {
+    window.addEventListener("resize", this.onWindowResize.bind(this));
+  }
+  // Resize the canvas and make sure it supports HiDPI displays.
+  onWindowResize() {
+    const dpr = window.devicePixelRatio;
+    canvas.width = canvas.clientWidth * dpr;
+    canvas.height = canvas.clientHeight * dpr;
+    backBuffer.width = canvas.width;
+    backBuffer.height = canvas.height;
+    // Scale the context to ensure correct drawing operations
+    gfx.scale(dpr, dpr);
   }
   // Starts a new frame. Clears the screen.
   beginFrame() {
