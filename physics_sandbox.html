@@ -151,6 +151,11 @@
                 return new Vector2D(0, 0)
             }
 
+            /**
+             * @class
+             * @param{number|Vector2D} x
+             * @param{number} [y]
+             */
             const Force = function (x, y) {
                 if (x instanceof Vector2D) {
                     this.vector = x.copy()
@@ -159,6 +164,11 @@
                 }
             }
 
+            /**
+             * @class
+             * @param{number|Vector2D} x
+             * @param{number} [y]
+             */
             const Vertex = function (x, y) {
                 if (x instanceof Vector2D) {
                     this.currPosition = x.copy()
@@ -246,7 +256,7 @@
 
             const drawGameWorld = () => {
                 // Clear the back buffer.
-                gfx.fillStyle = 'rgb(200, 100, 255)'
+                gfx.fillStyle = '#c5f2f7'
                 gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
                 // Draw the world.
                 drawVertices()
