@@ -211,7 +211,7 @@
                  * @returns{Vector2D} The vertex acceleration.
                  */
                 this.applyTo = (vertex) => {
-                    return this.vector.copy().div(mass)
+                    return this.vector.copy().div(vertex.mass)
                 }
             }
 
