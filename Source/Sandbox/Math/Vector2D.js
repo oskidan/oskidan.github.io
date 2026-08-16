@@ -36,6 +36,12 @@ export class Vector2D {
     }
     return this;
   }
+  // Negates this vector.
+  flip() {
+    this.x = -this.x;
+    this.y = -this.y;
+    return this;
+  }
   // Multiplies this vector by a given scalar.
   mul(s) {
     this.x *= s;

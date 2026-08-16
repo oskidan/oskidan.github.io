@@ -17,7 +17,17 @@ const particles = [
   new Particle(100, 200),
 ];
 
+const springs = [
+  new Spring(particles[0], particles[1]),
+  new Spring(particles[1], particles[2]),
+  new Spring(particles[2], particles[3]),
+  new Spring(particles[3], particles[0]),
+];
+
 const gameUpdate = () => {
+  for (const spring of springs) {
+    spring.update();
+  }
   for (const particle of particles) {
     particle.applyForce(0, 3); // Gravity.
     particle.update(time);
