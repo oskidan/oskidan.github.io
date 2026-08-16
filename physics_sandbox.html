@@ -275,7 +275,7 @@
                         .copy()
                         .sub(this.v1.currPosition)
                         .normalize()
-                    const totalMass = this.v0.mass + this.v2.mass
+                    const totalMass = this.v0.mass + this.v1.mass
                     const v0Contribution = this.v0.mass / totalMass
                     const v1Contribution = this.v1.mass / totalMass
                     this.v0.currPosition.add(
