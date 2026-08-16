@@ -66,12 +66,12 @@
                  * @param{number} x - The x coordinate of the vector.
                  * @param{number} y - The y coordinate of the vector.
                  */
-                const vec2 = function(x, y) {
+                const Vector2D = function(x, y) {
                     this.x = x
                     this.y = y
 
                     this.add = (x, y) => {
-                        if (x instanceof vec2) {
+                        if (x instanceof Vector2D) {
                             this.x += x.x
                             this.y += x.y
                             return this
@@ -82,7 +82,7 @@
                     }
 
                     this.sub = (x, y) => {
-                        if (x instanceof vec2) {
+                        if (x instanceof Vector2D) {
                             this.x -= x.x
                             this.y -= x.y
                             return this
@@ -99,11 +99,11 @@
                     }
 
                     this.copy = () => {
-                        return new vec2(this.x, this.y)
+                        return new Vector2D(this.x, this.y)
                     }
                 }
-                vec2.zero = () => { 
-                    return new vec2(0, 0)
+                Vector2D.zero = () => { 
+                    return new Vector2D(0, 0)
                 }
 
                 var
@@ -111,7 +111,7 @@
                     vertexCount = 0
                 const
                     /** @type{vec2} */
-                    gravity = new vec2(0, 9),
+                    gravity = new Vector2D(0, 9),
                     /** @type{vec2[]} */
                     vertexCurrPosition = [],
                     /** @type{vec2[]} */
@@ -121,13 +121,13 @@
 
                 const addVertex = (x, y) => {
                     vertexCount += 1
-                    vertexAcceleration.push(vec2.zero())
-                    if (x instanceof vec2) {
+                    vertexAcceleration.push(Vector2D.zero())
+                    if (x instanceof Vector2D) {
                         vertexCurrPosition.push(x.copy())
                         vertexPrevPosition.push(x.copy())
                     } else {
-                        vertexCurrPosition.push(new vec2(x, y))
-                        vertexPrevPosition.push(new vec2(x, y))
+                        vertexCurrPosition.push(new Vector2D(x, y))
+                        vertexPrevPosition.push(new Vector2D(x, y))
                     }
                 }
 
@@ -221,7 +221,7 @@
                  * @param{MouseEvent}
                  */
                 canvas.onmousedown = (event) => {
-                    const mousePos = new vec2(event.clientX, event.clientY)
+                    const mousePos = new Vector2D(event.clientX, event.clientY)
                     const canvasRect = canvas.getBoundingClientRect()
                     mousePos.sub(canvasRect.x, canvasRect.y)
                     addVertex(mousePos)
