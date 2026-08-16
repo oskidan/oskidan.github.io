@@ -240,6 +240,16 @@
                         .normalize()
                         .mul(this.mag / vertex.mass)
                 }
+
+                this.draw = () => {
+                    gfx.beginPath()
+                    gfx.moveTo(this.center.x + 8, this.center.y + 0)
+                    gfx.lineTo(this.center.x + 0, this.center.y + 8)
+                    gfx.lineTo(this.center.x - 8, this.center.y + 8)
+                    gfx.lineTo(this.center.x + 0, this.center.y - 8)
+                    gfx.moveTo(this.center.x + 8, this.center.y + 0)
+                    gfx.closePath()
+                }
             }
 
             /**
@@ -274,6 +284,13 @@
                             .copy()
                             .mul(forceMagnitude))
                 }
+
+                this.draw = () => {
+                    gfx.beginPath()
+                    gfx.moveTo(this.v0.currPosition.x, this.v0.currPosition.y)
+                    gfx.lineTo(this.v1.currPosition.x, this.v1.currPosition.y)
+                    gfx.closePath()
+                }
             }
 
             /**
@@ -285,6 +302,15 @@
 
                 this.applyConstraint = () => {
                     this.vertex.currPosition = this.vertexPosition.copy()
+                }
+
+                this.draw = () => {
+                    gfx.beginPath()
+                    gfx.moveTo(this.vertexPosition.x - 8, this.vertexPosition.y)
+                    gfx.lineTo(this.vertexPosition.x + 8, this.vertexPosition.y)
+                    gfx.moveTo(this.vertexPosition.x, this.vertexPosition.y - 8)
+                    gfx.lineTo(this.vertexPosition.x, this.vertexPosition.y + 8)
+                    gfx.closePath()
                 }
             }
 
@@ -340,6 +366,17 @@
                 }
             }
 
+            const drawForcesAndConstraints = () => {
+                gfx.fillStyle = 'yellow'
+                attractor.draw()
+                if (pin !== null) {
+                    pin.draw()
+                }
+                for (var i = 0; i < springCount; i++) {
+                    springs[i].draw()
+                }
+            }
+
             const drawStats = () => {
                 gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
                 gfx.fillRect(0, 0, 200, 200)
@@ -360,6 +397,7 @@
                 gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
                 // Draw the world.
                 drawVertices()
+                drawForces()
                 drawStats()
                 // Present the back buffer on screen.
                 frontBuffer.drawImage(backBuffer, 0, 0)
