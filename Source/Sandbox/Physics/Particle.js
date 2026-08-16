@@ -14,7 +14,7 @@ export class Particle {
     this.mass = 1;
     this.isPinned = false;
   }
-  get effectiveMass() {
+  effectiveMass() {
     return this.isPinned ? 0 : this.mass;
   }
   // Updates particle by integrating its motion with
