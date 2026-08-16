@@ -49,7 +49,7 @@ export class Particle {
       return
     }
     const accel = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
-    this.acceleartion.add(accel);
+    this.acceleration.add(accel);
     return this;
   }
 }
@@ -86,7 +86,7 @@ export const testParticle = () => {
     `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
   );
 
-  // If its previous and current positions are different, but it has no acceleartion, then
+  // If its previous and current positions are different, but it has no acceleration, then
   // the particle will move with a constant speed.
   sut.currPosition.set(0, 1);
   sut.update(mockTime);
