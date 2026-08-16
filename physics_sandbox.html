@@ -156,23 +156,6 @@
              * @param{number|Vector2D} x
              * @param{number} [y]
              */
-            const Force = function (x, y) {
-                if (x instanceof Vector2D) {
-                    this.vector = x.copy()
-                } else {
-                    this.vector = new Vector2D(x, y)
-                }
-
-                this.applyTo = (mass) => {
-                    return this.vector.copy().div(mass)
-                }
-            }
-
-            /**
-             * @class
-             * @param{number|Vector2D} x
-             * @param{number} [y]
-             */
             const Vertex = function (x, y) {
                 if (x instanceof Vector2D) {
                     this.currPosition = x.copy()
@@ -187,7 +170,7 @@
                 this.apply = (f) => {
                     // TODO: Apply only those forces, we are intersted in.
                     this.acceleration
-                        .add(f.applyTo(this.mass))
+                        .add(f.applyTo(this))
                 }
 
                 this.update = () => {
@@ -209,6 +192,53 @@
                     const topLeftCorner = this.currPosition.copy()
                     topLeftCorner.sub(visualExtent, visualExtent)
                     gfx.fillRect(topLeftCorner.x, topLeftCorner.y, visualSize, visualSize)
+                }
+            }
+
+            /**
+             * @class
+             * @param{number|Vector2D} x
+             * @param{number} [y]
+             */
+            const Gravity = function (x, y) {
+                if (x instanceof Vector2D) {
+                    this.vector = x.copy()
+                } else {
+                    this.vector = new Vector2D(x, y)
+                }
+
+                /** 
+                 * @returns{Vector2D} The vertex acceleration.
+                 */
+                this.applyTo = (vertex) => {
+                    return this.vector.copy().div(mass)
+                }
+            }
+
+            /**
+             * @class
+             * @param{number|Vector2D} x
+             * @param{number} [y]
+             * @param{number} [mag]
+             */
+            const ForceField = function (x, y, mag) {
+                if (x instanceof Vector2D) {
+                    this.center = x.copy()
+                    this.mag = x
+                } else {
+                    this.center = new Vector2D(x, y)
+                    this.mag = mag
+                }
+
+                /**
+                 * @returns{Vector2D} The vertex acceleration.
+                 */
+                this.applyTo = (vertex) => {
+                    return this.center
+                        .copy()
+                        .sub(vertex.currPosition)
+                        .normalize()
+                        .mul(this.mag / vertex.mass)
                 }
             }
 
@@ -247,13 +277,11 @@
             }
 
             var
-                /** @type{number} */
                 vertexCount = 0,
-                /** @type{number} */
                 springCount = 0
             const
-                /** @type{Force} */
-                gravity = new Force(0, 16),
+                gravity = new Gravity(0, 16),
+                attractor = new ForceField(300, 300, 32),
                 /** @type{Vertex[]} */
                 vertices = [],
                 /** @type{Spring[]} */
@@ -273,6 +301,7 @@
             const applyForces = () => {
                 for (var i = 0; i < vertexCount; i++) {
                     vertices[i].apply(gravity)
+                    vertices[i].apply(attractor)
                 }
                 for (var i = 0; i < springCount; i++) {
                     springs[i].applyForce()
