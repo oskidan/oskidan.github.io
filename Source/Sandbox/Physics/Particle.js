@@ -20,7 +20,7 @@ export class Particle {
     this.currPosition
       .mul(2)
       .sub(this.prevPosition)
-      .add(this.acceleration * time.dtSquared);
+      .add(this.acceleration.mul(time.dtSquared));
     this.prevPosition = positionBeforeUpdate;
   }
 }
