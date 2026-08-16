@@ -1,4 +1,4 @@
-export default class Vector2D {
+export class Vector2D {
   // Constructs a vector from either a pair of coordinates
   // or another vector.
   constructor(x, y) {
