@@ -31,12 +31,12 @@ export class Renderer {
   // Resize the canvas and make sure it supports HiDPI displays.
   onWindowResize() {
     const dpr = window.devicePixelRatio;
-    canvas.width = canvas.clientWidth * dpr;
-    canvas.height = canvas.clientHeight * dpr;
-    backBuffer.width = canvas.width;
-    backBuffer.height = canvas.height;
+    this.canvas.width = this.canvas.clientWidth * dpr;
+    this.canvas.height = this.canvas.clientHeight * dpr;
+    this.backBuffer.width = this.canvas.width;
+    this.backBuffer.height = this.canvas.height;
     // Scale the context to ensure correct drawing operations
-    gfx.scale(dpr, dpr);
+    this.gfx.scale(dpr, dpr);
   }
   // Starts a new frame. Clears the screen.
   beginFrame() {
