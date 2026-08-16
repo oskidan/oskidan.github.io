@@ -14,6 +14,7 @@ export class Particle {
     this.mass = 1;
     this.isPinned = false;
   }
+  // Returns 0 if the particle isPinned, or its mass otherwise.
   effectiveMass() {
     return this.isPinned ? 0 : this.mass;
   }
@@ -32,8 +33,11 @@ export class Particle {
   }
   // Applies force to the particle.
   applyForce(x, y) {
+    if (this.isPinned) {
+      return
+    }
     const force = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
-    this.acceleration.add(force.mul(this.inverseMass));
+    this.acceleration.add(force.div(this.mass));
     return this;
   }
 }
