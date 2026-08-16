@@ -42,7 +42,7 @@ export class Renderer {
   }
   // Starts a new frame. Clears the screen.
   beginFrame() {
-    this.gfx.fillStyle = "#cae0fd";
+    this.gfx.fillStyle = "#4c087b";
     this.gfx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
   // Ends the current frame. Swaps the rendered image onto the screen.
@@ -67,7 +67,7 @@ export class Renderer {
   drawSprings(springs) {
     this.gfx.strokeStyle = "#049904"
     this.gfx.beginPath()
-    for (const spring in springs) {
+    for (const spring of springs) {
       this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y)
       this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y)
     }
