@@ -17,7 +17,7 @@ export class Time {
 }
 
 export const testTime = () => {
-  var sut = Time(1, 0);
+  var sut = new Time(1, 0);
   console.assert(
     sut.fps == 1,
     `Expected: sut.fps == 1, got sut.fps == ${sut.fps}`,
