@@ -56,6 +56,13 @@ export class Vector2D {
   magnitude() {
     return Math.sqrt(this.magSquared());
   }
+  // Returns the distance between this and a given vector.
+  distanceTo(x, y) {
+    if (x instanceof Vector2D) {
+      return x.copy().sub(this).magnitude();
+    }
+    return new Vector2D(x, y).sub(this).magnitude();
+  }
   // Normalizes this vector. If this vector is a zero vector,
   // when normalized, it remains to be a zero vector.
   normalize() {
@@ -81,6 +88,10 @@ export class Vector2D {
   // Returns a copy of this vector.
   copy() {
     return new Vector2D(this);
+  }
+  // Returns a string that describes this vector.
+  describe() {
+    return `(${this.x}, ${this.y})`;
   }
 }
 
