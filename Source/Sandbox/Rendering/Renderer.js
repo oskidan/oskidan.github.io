@@ -71,6 +71,6 @@ export class Renderer {
       this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y)
       this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y)
     }
-    this.stroke()
+    this.gfx.stroke()
   }
 }
