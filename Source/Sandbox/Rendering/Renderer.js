@@ -12,7 +12,7 @@ export class Renderer {
         if (backBuffer === null) {
             throw new Error(`Cannot create an offscreen canvas.`)
         }
-        const gfx = offscreen.getContext("2d")
+        const gfx = backBuffer.getContext("2d")
         if (gfx === null) {
             throw new Error(`Cannot get 2D context for offscreen canvas.`)
         }
