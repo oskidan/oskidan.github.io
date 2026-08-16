@@ -33,8 +33,10 @@ const gameUpdate = () => {
     // because all objects accelerate due to gravity the same amount.
     particle.applyAccel(0, 3);
   }
-  for (const spring of springs) {
-    spring.update();
+  for (var i = 0; i < 5; i++) {
+    for (const spring of springs) {
+      spring.update();
+    }
   }
   for (const particle of particles) {
     particle.update(time);
