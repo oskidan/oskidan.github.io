@@ -1,239 +1,311 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Physics Sandbox</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
+
+<head>
+    <title>Physics Sandbox</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas">
+        Your browser doesn't support canvas.
+    </canvas>
+    <script>
+        window.onload = (event) => {
+            /** @type{HTMLCanvasEvlement} */
+            const canvas = document.querySelector("#canvas")
+
+            /** @type{HTMLCanvasEvlement} */
+            const backBuffer = document.createElement('canvas')
+
+            /** @type{CanvasRenderingContext2D} */
+            const frontBuffer = canvas.getContext("2d", {alpha: false})
+
+            /** @type{CanvasRenderingContext2D} */
+            const gfx = backBuffer.getContext("2d")
+
+            /** @type{number} The target FPS. */
+            const fps = 30
+
+            /** @type{number} The duration of a simulation tick in milliseconds. */
+            const millisPerTick = 1000 / fps
+
+            /** @type{number} The duration of a simulation tick in seconds. */
+            const dt = 1 / fps
+
+            /** @type{number} The dt^2. */
+            const dtSquared = dt * dt
+
+            /** @type{DOMHighResTimeStamp} */
+            var prevTimestamp = performance.now()
+
+            /** 
+             * @param{number} start - The lower bound of the range of numbers.
+             * @param{number} stop  - The upper bound of the range of numbers.
+             * @return{number} A number number in the range from `start` to `stop`, inclusive.
+             */
+            const randomNumberBetween = (start, stop) => {
+                return start + Math.random() * (stop - start)
             }
-            body, html {
-                height: 100%;
-                overflow: hidden;
-            }
-            #canvas {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                display: block;
-            }
-        </style>
-    </head>
-    <body>
-        <canvas id="canvas">
-            Your browser doesn't support canvas.
-        </canvas>
-        <script>
-            window.onload = (event) => {
-                /** @type{HTMLCanvasEvlement} */
-                const canvas = document.querySelector("#canvas")
 
-                /** @type{HTMLCanvasEvlement} */
-                const backBuffer = document.createElement('canvas')
+            /**
+             * @class
+             * @param{number} x - The x coordinate of the vector.
+             * @param{number} y - The y coordinate of the vector.
+             */
+            const Vector2D = function (x, y) {
+                this.x = x
+                this.y = y
 
-                /** @type{CanvasRenderingContext2D} */
-                const frontBuffer = canvas.getContext("2d", { alpha: false })
-                
-                /** @type{CanvasRenderingContext2D} */
-                const gfx = backBuffer.getContext("2d")
-
-                /** @type{number} The target FPS. */
-                const fps = 30
-
-                /** @type{number} The duration of a simulation tick in milliseconds. */
-                const millisPerTick = 1000 / fps
-
-                /** @type{number} The duration of a simulation tick in seconds. */
-                const dt = 1 / fps
-
-                /** @type{number} The dt^2. */
-                const dtSquared = dt * dt
-
-                /** @type{DOMHighResTimeStamp} */
-                var prevTimestamp = performance.now()
-
-                /** 
-                 * @param{number} start - The lower bound of the range of numbers.
-                 * @param{number} stop  - The upper bound of the range of numbers.
-                 * @return{number} A number number in the range from `start` to `stop`, inclusive.
-                 */
-                const randomNumberBetween = (start, stop) => {
-                    return start + Math.random() * (stop - start)
-                }
-
-                /**
-                 * @class
-                 * @param{number} x - The x coordinate of the vector.
-                 * @param{number} y - The y coordinate of the vector.
-                 */
-                const Vector2D = function(x, y) {
-                    this.x = x
-                    this.y = y
-
-                    this.add = (x, y) => {
-                        if (x instanceof Vector2D) {
-                            this.x += x.x
-                            this.y += x.y
-                            return this
-                        }
+                this.add = (x, y) => {
+                    if (x instanceof Vector2D) {
+                        this.x += x.x
+                        this.y += x.y
+                    } else {
                         this.x += x
                         this.y += y
-                        return this
                     }
+                    return this
+                }
 
-                    this.sub = (x, y) => {
-                        if (x instanceof Vector2D) {
-                            this.x -= x.x
-                            this.y -= x.y
-                            return this
-                        }
+                this.sub = (x, y) => {
+                    if (x instanceof Vector2D) {
+                        this.x -= x.x
+                        this.y -= x.y
+                    } else {
                         this.x -= x
                         this.y -= y
-                        return this
                     }
-
-                    this.mul = (s) => {
-                        this.x *= s
-                        this.y *= s
-                        return this
-                    }
-
-                    this.copy = () => {
-                        return new Vector2D(this.x, this.y)
-                    }
-                }
-                Vector2D.zero = () => { 
-                    return new Vector2D(0, 0)
+                    return this
                 }
 
-                var
-                    /** @type{number} */
-                    vertexCount = 0
-                const
-                    /** @type{vec2} */
-                    gravity = new Vector2D(0, 9),
-                    /** @type{vec2[]} */
-                    vertexCurrPosition = [],
-                    /** @type{vec2[]} */
-                    vertexPrevPosition = [],
-                    /** @type{vec2[]} */
-                    vertexAcceleration = []
+                this.mul = (s) => {
+                    this.x *= s
+                    this.y *= s
+                    return this
+                }
 
-                const addVertex = (x, y) => {
-                    vertexCount += 1
-                    vertexAcceleration.push(Vector2D.zero())
-                    if (x instanceof Vector2D) {
-                        vertexCurrPosition.push(x.copy())
-                        vertexPrevPosition.push(x.copy())
+                this.div = (s) => {
+                    this.x /= s
+                    this.y /= s
+                    return this
+                }
+
+                this.magSquared = () => {
+                    return this.x * this.x + this.y * this.y
+                }
+
+                this.mag = () => {
+                    return Math.sqrt(this.magSquared())
+                }
+
+                this.normalize = () => {
+                    const mag = this.mag()
+                    if (mag === 0) {
+                        this.x = 0
+                        this.y = 0
                     } else {
-                        vertexCurrPosition.push(new Vector2D(x, y))
-                        vertexPrevPosition.push(new Vector2D(x, y))
+                        this.div(mag)
                     }
+                    return this
                 }
 
-                const applyForces = () => {
-                    for (var i = 0; i < vertexCount; i++) {
-                        vertexAcceleration[i] = gravity.copy()
+                this.dir = () => {
+                    return this.copy().normalize()
+                }
+
+                this.copy = () => {
+                    return new Vector2D(this.x, this.y)
+                }
+
+                this.set = (x, y) => {
+                    if (x instanceof Vector2D) {
+                        this.x = x.x
+                        this.y = x.y
+                    } else {
+                        this.x = x
+                        this.y = y
                     }
+                    return this
                 }
-
-                const updateVertices = () => {
-                    for (var i = 0; i < vertexCount; i++) {
-                        // Stormer-Verlet integration:
-                        //  pos = pos * 2 - prev_pos + acc * dt * dt
-                        const vertexPosition = vertexCurrPosition[i].copy()
-                        vertexCurrPosition[i]
-                            .mul(2)
-                            .sub(vertexPrevPosition[i])
-                            .add(vertexAcceleration[i].mul(dtSquared))
-                        vertexPrevPosition[i] = vertexPosition
-                    }
-                }
-
-                const drawVertices = () => {
-                    gfx.fillStyle = 'red'
-                    for (var i = 0; i < vertexCount; i++) {
-                        const cornerTL = vertexCurrPosition[i].copy()
-                        cornerTL.sub(8, 8)
-                        gfx.fillRect(cornerTL.x, cornerTL.y, 16, 16)
-                    }
-                }
-
-                const drawStats = () => {
-                    gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
-                    gfx.fillRect(0, 0, 200, 200)
-                    gfx.fillStyle = 'black'
-                    gfx.fillText(`Vertex Count: ${vertexCount}`, 22, 22, 200)
-                    gfx.fillStyle = 'white'
-                    gfx.fillText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
-                }
-
-                const updateGameWorld = () => {
-                    applyForces()
-                    updateVertices()
-                }
-
-                const drawGameWorld = () => {
-                    // Clear the back buffer.
-                    gfx.fillStyle = 'rgb(200, 100, 255)'
-                    gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
-                    // Draw the world.
-                    drawVertices()
-                    drawStats()
-                    // Present the back buffer on screen.
-                    frontBuffer.drawImage(backBuffer, 0, 0)
-                }
-
-                /** @param{DOMHighResTimeStamp} currTimestamp */
-                const gameLoop = (currTimestamp) => {
-                    // Update the game time.
-                    const elapsedMillis = currTimestamp - prevTimestamp
-                    const tickCount = Math.floor(elapsedMillis / millisPerTick)
-                    prevTimestamp += (tickCount * millisPerTick)
-                    // Update the game world as many times as many ticks have elapsed.
-                    for (var i = 0; i < tickCount; i++) {
-                        updateGameWorld()
-                    }
-                    // Render the game world once.
-                    if (tickCount != 0) {
-                        drawGameWorld()
-                    }
-                    window.requestAnimationFrame(gameLoop)
-                }
-
-                const resizeCavnas = () => {
-                    // Get the DPR and size of the canvas
-                    const dpr = window.devicePixelRatio
-                    const displayWidth = canvas.clientWidth
-                    const displayHeight = canvas.clientHeight
-
-                    // Set the "actual" size of the canvas
-                    canvas.width = canvas.clientWidth * dpr
-                    canvas.height = canvas.clientHeight * dpr
-                    backBuffer.width = canvas.width
-                    backBuffer.height = canvas.height
-
-                    // Scale the context to ensure correct drawing operations
-                    gfx.scale(dpr, dpr)
-                }
-
-                /**
-                 * @param{MouseEvent}
-                 */
-                canvas.onmousedown = (event) => {
-                    const mousePos = new Vector2D(event.clientX, event.clientY)
-                    const canvasRect = canvas.getBoundingClientRect()
-                    mousePos.sub(canvasRect.x, canvasRect.y)
-                    addVertex(mousePos)
-                }
-
-                window.onresize = (event) => {
-                    resizeCavnas()
-                }
-
-                resizeCavnas()
-                gameLoop(performance.now())
             }
-        </script>
-    </body>
+            Vector2D.zero = () => {
+                return new Vector2D(0, 0)
+            }
+
+            const Force = function (x, y) {
+                if (x instanceof Vector2D) {
+                    this.vector = x.copy()
+                } else {
+                    this.vector = new Vector2D(x, y)
+                }
+            }
+
+            const Vertex = function (x, y) {
+                if (x instanceof Vector2D) {
+                    this.currPosition = x.copy()
+                    this.prevPosition = x.copy()
+                } else {
+                    this.currPosition = new Vector2D(x, y)
+                    this.prevPosition = new Vector2D(x, y)
+                }
+                this.acceleration = Vector2D.zero()
+                this.mass = 1
+
+                this.applyForce = (f) => {
+                    this.acceleration
+                        .add(f.vector.div(this.mass))
+                }
+
+                this.update = () => {
+                    // Stormer-Verlet integration:
+                    //  pos = pos * 2 - prev_pos + acc * dt * dt 
+                    const positionBeforeUpdate = this.currPosition.copy()
+                    this.currPosition
+                        .mul(2)
+                        .sub(this.prevPosition)
+                        .add(this.acceleration.mul(dtSquared))
+                    this.prevPosition = positionBeforeUpdate
+                    this.acceleration.set(0, 0)
+                }
+
+                const visualExtent = 2
+                const visualSize = visualExtent * 2
+
+                this.draw = () => {
+                    const topLeftCorner = this.currPosition.copy()
+                    topLeftCorner.sub(visualExtent, visualExtent)
+                    gfx.fillRect(topLeftCorner.x, topLeftCorner.y, visualSize, visualSize)
+                }
+            }
+
+            var
+                /** @type{number} */
+                vertexCount = 0
+            const
+                /** @type{Force} */
+                gravity = new Force(0, 9),
+                /** @type{Vertex[]} */
+                vetices = []
+
+            const addVertex = (x, y) => {
+                vertexCount += 1
+                vertices.push(new Vertex(x, y))
+            }
+
+            const applyForces = () => {
+                for (var i = 0; i < vertexCount; i++) {
+                    vertices[i].applyForce(gravity)
+                }
+            }
+
+            const updateVertices = () => {
+                for (var i = 0; i < vertexCount; i++) {
+                    vertices[i].update()
+                }
+            }
+
+            const drawVertices = () => {
+                gfx.fillStyle = 'red'
+                for (var i = 0; i < vertexCount; i++) {
+                    vertices[i].draw()
+                }
+            }
+
+            const drawStats = () => {
+                gfx.fillStyle = 'rgba(100, 100, 100, 0.4)'
+                gfx.fillRect(0, 0, 200, 200)
+                gfx.fillStyle = 'black'
+                gfx.fillText(`Vertex Count: ${vertexCount}`, 22, 22, 200)
+                gfx.fillStyle = 'white'
+                gfx.fillText(`Vertex Count: ${vertexCount}`, 20, 20, 200)
+            }
+
+            const updateGameWorld = () => {
+                applyForces()
+                updateVertices()
+            }
+
+            const drawGameWorld = () => {
+                // Clear the back buffer.
+                gfx.fillStyle = 'rgb(200, 100, 255)'
+                gfx.fillRect(0, 0, backBuffer.width, backBuffer.height)
+                // Draw the world.
+                drawVertices()
+                drawStats()
+                // Present the back buffer on screen.
+                frontBuffer.drawImage(backBuffer, 0, 0)
+            }
+
+            /** @param{DOMHighResTimeStamp} currTimestamp */
+            const gameLoop = (currTimestamp) => {
+                // Update the game time.
+                const elapsedMillis = currTimestamp - prevTimestamp
+                const tickCount = Math.floor(elapsedMillis / millisPerTick)
+                prevTimestamp += (tickCount * millisPerTick)
+                // Update the game world as many times as many ticks have elapsed.
+                for (var i = 0; i < tickCount; i++) {
+                    updateGameWorld()
+                }
+                // Render the game world once.
+                if (tickCount != 0) {
+                    drawGameWorld()
+                }
+                window.requestAnimationFrame(gameLoop)
+            }
+
+            const resizeCavnas = () => {
+                // Get the DPR and size of the canvas
+                const dpr = window.devicePixelRatio
+                const displayWidth = canvas.clientWidth
+                const displayHeight = canvas.clientHeight
+
+                // Set the "actual" size of the canvas
+                canvas.width = canvas.clientWidth * dpr
+                canvas.height = canvas.clientHeight * dpr
+                backBuffer.width = canvas.width
+                backBuffer.height = canvas.height
+
+                // Scale the context to ensure correct drawing operations
+                gfx.scale(dpr, dpr)
+            }
+
+            /**
+             * @param{MouseEvent}
+             */
+            canvas.onmousedown = (event) => {
+                const mousePos = new Vector2D(event.clientX, event.clientY)
+                const canvasRect = canvas.getBoundingClientRect()
+                mousePos.sub(canvasRect.x, canvasRect.y)
+                addVertex(mousePos)
+            }
+
+            window.onresize = (event) => {
+                resizeCavnas()
+            }
+
+            resizeCavnas()
+            gameLoop(performance.now())
+        }
+    </script>
+</body>
+
 </html>
