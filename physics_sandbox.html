@@ -269,7 +269,10 @@
                 this.restLength = this.length()
                 this.stiffness = stiffness || 1
 
-                this.applyConstraint = () => {
+                this.v0Force = Vector2D.zero()
+                this.v1Force = Vector2D.zero()
+
+                this.update = () => {
                     const forceMagnitude = this.stiffness * this.length() / this.restLength
                     const forceDirection = this.v0.currPosition
                         .copy()
@@ -278,14 +281,22 @@
                     const totalMass = this.v0.mass + this.v1.mass
                     const v0Contribution = this.v0.mass / totalMass
                     const v1Contribution = this.v1.mass / totalMass
-                    this.v0.currPosition.add(
-                        forceDirection
-                            .copy()
-                            .mul(-forceMagnitude * v0Contribution))
-                    this.v1.currPosition.add(
-                        forceDirection
-                            .copy()
-                            .mul(forceMagnitude * v1Contribution))
+                    this.v0Force = forceDirection.copy().mul(-forceMagnitude * v0Contribution)
+                    this.v1Force = forceDirection.copy().mul(+forceMagnitude * v1Contribution)
+                }
+
+                this.applyTo = (v) => {
+                    if (v === this.v0) {
+                        return this.v0Force.copy().div(v.mass)
+                    }
+                    if (v === this.v1) {
+                        return this.v1Force.copy().div(v.mass)
+                    }
+                }
+
+                this.applyConstraint = () => {
+                    this.v0.apply(this)
+                    this.v1.apply(this)
                 }
 
                 this.draw = () => {
@@ -343,7 +354,7 @@
                 vertices.push(newVertex)
             }
 
-            const applyForces = () => {
+            const applyForcesAndConstraints = () => {
                 for (var i = 0; i < vertexCount; i++) {
                     vertices[i].apply(gravity)
                     vertices[i].apply(attractor)
@@ -351,6 +362,8 @@
                 for (var i = 0; i < springCount; i++) {
                     springs[i].applyConstraint()
                 }
+                // FIXME: Springs have to be aware of pinned vertices.
+                // Seems like a vertex property rather than a constraint.
                 if (pin !== null) {
                     pin.applyConstraint()
                 }
@@ -390,7 +403,7 @@
             }
 
             const updateGameWorld = () => {
-                applyForces()
+                applyForcesAndConstraints()
                 updateVertices()
             }
 
