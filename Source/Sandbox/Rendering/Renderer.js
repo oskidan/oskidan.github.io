@@ -23,6 +23,8 @@ export class Renderer {
     this.backBuffer = backBuffer;
     this.gfx = gfx;
     this.installEventListeners();
+    // Resize the renderer to match the canvas.
+    this.onWindowResize()
   }
   // Installs event listeners.
   installEventListeners() {
