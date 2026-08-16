@@ -53,13 +53,13 @@ export default class Vector2D {
     return this.x * this.x + this.y * this.y;
   }
   // Returns the magnitude of this vector.
-  mag() {
+  magnitude() {
     return Math.sqrt(this.magSquared());
   }
   // Normalizes this vector. If this vector is a zero vector,
   // when normalized, it remains to be a zero vector.
   noarmalize() {
-    const magnitude = this.mag();
+    const magnitude = this.magnitude();
     if (magnitude == 0) {
       this.set(0, 0);
     } else {
