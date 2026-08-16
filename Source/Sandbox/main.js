@@ -28,8 +28,10 @@ const springs = [
 ];
 
 const gameUpdate = () => {
-  for (const spring of springs) {
-    spring.update();
+  for (var i = 0; i < 5; i++) {
+    for (const spring of springs) {
+      spring.update();
+    }
   }
   for (const particle of particles) {
     // Gravity. Please note that it cannot be modelled as a force,
