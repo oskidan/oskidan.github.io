@@ -38,12 +38,7 @@ export class Particle {
   }
   // Applies force to the particle.
   applyForce(x, y) {
-    const force;
-    if (x instanceof Vector2D) {
-      force = x.copy();
-    } else {
-      force = new Vector2D(x, y);
-    }
+    const force = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
     this.acceleration.add(force.mul(this.inverseMass));
     return this;
   }
