@@ -162,6 +162,10 @@
                 } else {
                     this.vector = new Vector2D(x, y)
                 }
+
+                this.applyTo = (mass) => {
+                    return this.vector.copy().div(mass)
+                }
             }
 
             /**
@@ -180,9 +184,10 @@
                 this.acceleration = Vector2D.zero()
                 this.mass = 1
 
-                this.applyForce = (f) => {
+                this.apply = (f) => {
+                    // TODO: Apply only those forces, we are intersted in.
                     this.acceleration
-                        .add(f.vector.div(this.mass))
+                        .add(f.applyTo(this.mass))
                 }
 
                 this.update = () => {
@@ -207,23 +212,70 @@
                 }
             }
 
+            /**
+             * @class
+             */
+            const Spring = function (v0, v1, stiffness) {
+                this.v0 = v0
+                this.v1 = v1
+
+                this.length = () => {
+                    return this.v0.currPosition
+                        .copy()
+                        .sub(this.v1.currPosition)
+                        .mag()
+                }
+
+                this.restLength = this.length()
+                this.stiffness = stiffness || 1
+
+                this.applyForce = () => {
+                    const forceMagnitude = this.stiffness * this.length() / this.restLength
+                    const forceDirection = this.v0.currPosition
+                        .copy()
+                        .sub(this.v1.currPosition)
+                        .normalize()
+                    this.v0.currPosition.add(
+                        forceDirection
+                            .copy()
+                            .mul(-forceMagnitude))
+                    this.v1.currPosition.add(
+                        forceDirection
+                            .copy()
+                            .mul(forceMagnitude))
+                }
+            }
+
             var
                 /** @type{number} */
-                vertexCount = 0
+                vertexCount = 0,
+                /** @type{number} */
+                springCount = 0
             const
                 /** @type{Force} */
-                gravity = new Force(0, 9),
+                gravity = new Force(0, 16),
                 /** @type{Vertex[]} */
-                vertices = []
+                vertices = [],
+                /** @type{Spring[]} */
+                springs = []
 
             const addVertex = (x, y) => {
                 vertexCount += 1
-                vertices.push(new Vertex(x, y))
+                const newVertex = new Vertex(x, y)
+                if (vertices.length > 0) {
+                    springCount += 1
+                    const newSpring = new Spring(newVertex, vertices[vertices.length - 1])
+                    springs.push(newSpring)
+                }
+                vertices.push(newVertex)
             }
 
             const applyForces = () => {
                 for (var i = 0; i < vertexCount; i++) {
-                    vertices[i].applyForce(gravity)
+                    vertices[i].apply(gravity)
+                }
+                for (var i = 0; i < springCount; i++) {
+                    springs[i].applyForce()
                 }
             }
 
