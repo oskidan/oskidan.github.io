@@ -37,6 +37,7 @@ const gameUpdate = () => {
 
 const gameDraw = () => {
   renderer.beginFrame();
+  renderer.drawSprings(springs);
   renderer.drawParticles(particles);
   renderer.endFrame();
 };

@@ -3,8 +3,10 @@ export class Spring {
     this.p0 = p0;
     this.p1 = p1;
     this.stiffness = stiffness === undefined ? 1 : stiffness;
-    this.restLength = p0.copy().sub(p1).magnitude();
+    this.restLength = p0.currPosition.copy().sub(p1.currPosition).magnitude();
+    this.deformation = 0; // 0 - no deformation
   }
+  // Updates the spring to enforces its constraint.
   update() {
     const p0Mass = this.p0.effectiveMass();
     const p1Mass = this.p1.effectiveMass();
@@ -18,9 +20,10 @@ export class Spring {
     const springVec = this.p0.currPosition.copy().sub(this.p1.currPosition);
     const springDir = springVec.normalize();
     const springLength = springVec.magnitude();
-    const springDeform = Math.abs(this.restLength - springLength);
-    const springForce = springDir.mul(springDeform * this.stiffness);
+    const springDispl = Math.abs(this.restLength - springLength);
+    const springForce = springDir.mul(springDispl * this.stiffness);
     this.p0.applyForce(springForce.copy().flip());
     this.p1.applyForce(springForce);
+    this.deformation = springDispl / this.restLength;
   }
 }

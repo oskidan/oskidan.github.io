@@ -63,4 +63,14 @@ export class Renderer {
       );
     }
   }
+  // Draws given springs as lines.
+  drawSprings(springs) {
+    this.gfx.strokeStyle = "#049904"
+    this.gfx.beginPath()
+    for (const spring in springs) {
+      this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y)
+      this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y)
+    }
+    this.stroke()
+  }
 }
