@@ -290,12 +290,12 @@
 
             var
                 vertexCount = 0,
-                springCount = 0
+                springCount = 0,
+                /** @type{Pin} */
+                pin = null
             const
                 gravity = new Gravity(0, 16),
                 attractor = new ForceField(300, 300, 32),
-                /** @type{Pin} */
-                pin = null,
                 /** @type{Vertex[]} */
                 vertices = [],
                 /** @type{Spring[]} */
