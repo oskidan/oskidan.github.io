@@ -259,7 +259,7 @@
                 this.restLength = this.length()
                 this.stiffness = stiffness || 1
 
-                this.applyForce = () => {
+                this.applyConstraint = () => {
                     const forceMagnitude = this.stiffness * this.length() / this.restLength
                     const forceDirection = this.v0.currPosition
                         .copy()
@@ -276,12 +276,26 @@
                 }
             }
 
+            /**
+             * @class
+             */
+            const Pin = function(vertex) {
+                this.vertex = vertex
+                this.vertexPosition = vertex.currPosition.copy()
+
+                this.applyConstraint = () => {
+                    this.vertex.currPosition = this.vertexPosition.copy()
+                }
+            }
+
             var
                 vertexCount = 0,
                 springCount = 0
             const
                 gravity = new Gravity(0, 16),
                 attractor = new ForceField(300, 300, 32),
+                /** @type{Pin} */
+                pin = null,
                 /** @type{Vertex[]} */
                 vertices = [],
                 /** @type{Spring[]} */
@@ -294,6 +308,8 @@
                     springCount += 1
                     const newSpring = new Spring(newVertex, vertices[vertices.length - 1])
                     springs.push(newSpring)
+                } else {
+                    pin = new Pin(newVertex)
                 }
                 vertices.push(newVertex)
             }
@@ -304,7 +320,10 @@
                     vertices[i].apply(attractor)
                 }
                 for (var i = 0; i < springCount; i++) {
-                    springs[i].applyForce()
+                    springs[i].applyConstraint()
+                }
+                if (pin !== null) {
+                    pin.applyConstraint()
                 }
             }
 
