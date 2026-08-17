@@ -1,29 +1,58 @@
 export class Spring {
-  constructor(p0, p1, stiffness) {
+  constructor(p0, p1, stiffness, id) {
     this.p0 = p0;
     this.p1 = p1;
     this.stiffness = stiffness === undefined ? 1 : stiffness;
-    this.restLength = p0.currPosition.copy().sub(p1.currPosition).magnitude();
-    this.deformation = 0; // 0 - no deformation
+    this.restLength = p0.distanceTo(p1);
+    this.id = id;
   }
-  // Updates the spring to enforces its constraint.
-  update() {
-    const p0Mass = this.p0.effectiveMass();
-    const p1Mass = this.p1.effectiveMass();
-    const totalMass = p0Mass + p1Mass;
-    if (totalMass === 0) {
+
+  /**
+   * @returns {number} The deformation of this pring in percents. Negative number for compressed springs, positive for
+   * stretched ones.
+   */
+  deformation() {
+    return (1.0 - this.p0.distanceTo(this.p1) / this.restLength) * 100;
+  }
+
+  /**
+   * Constrains to the perticles joined by this spring.
+   * Uses the spring equation: F = kX
+   */
+  applyConstraint() {
+    var p0Contrib = this.p0.isPinned ? 0 : 1;
+    var p1Contrib = this.p1.isPinned ? 0 : 1;
+    const totalContrib = p0Contrib + p1Contrib;
+    if (totalContrib === 0) {
       return;
     }
-    const p0Contrib = p0Mass / totalMass;
-    const p1Contrib = p1Mass / totalMass;
-    // p0 <- p1
-    const springVec = this.p0.currPosition.copy().sub(this.p1.currPosition);
-    const springDir = springVec.copy().normalize();
-    const springLength = springVec.magnitude();
-    const springDispl = springLength - this.restLength;
-    const springForce = springDir.mul(springDispl * this.stiffness);
-    this.p0.applyForce(springForce.copy().mul(-p0Contrib));
-    this.p1.applyForce(springForce.mul(p1Contrib));
-    this.deformation = springDispl / this.restLength;
+    p0Contrib /= totalContrib;
+    p1Contrib /= totalContrib;
+
+    const vector = this.p0.vectorTo(this.p1);
+    const length = vector.magnitude();
+    const displacement = (this.restLength - length) * this.stiffness;
+    // When displacement is:
+    //  < 0 => particles should be brought closer together;
+    //  > 0 => particles should be brought further aparat;
+    //  = 0 => particles should stay still.
+
+    if (p0Contrib !== 0) {
+      this.p0.moveInDirectionBy(vector, -displacement * p0Contrib);
+    }
+    if (p1Contrib !== 0) {
+      this.p1.moveInDirectionBy(vector, displacement * p1Contrib);
+    }
+
+    return this;
+  }
+
+  /**
+   * @returns The center of this spring.
+   */
+  center() {
+    const vector = this.p0.vectorTo(this.p1);
+    const center = this.p0.currPosition.copy().add(vector.mul(0.5));
+    return center;
   }
 }

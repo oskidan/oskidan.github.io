@@ -1,3 +1,6 @@
+import { greaterThan, lessThanOrEqual } from "../Math/Ordering.js";
+
+/** The API for drawing the game visuals. */
 export class Renderer {
   constructor(canvasId) {
     const canvas = document.querySelector(canvasId);
@@ -24,13 +27,19 @@ export class Renderer {
     this.gfx = gfx;
     this.installEventListeners();
     // Resize the renderer to match the canvas.
-    this.onWindowResize()
+    this.onWindowResize();
   }
-  // Installs event listeners.
+
+  /**
+   * Installs event listeners.
+   */
   installEventListeners() {
     window.addEventListener("resize", this.onWindowResize.bind(this));
   }
-  // Resize the canvas and make sure it supports HiDPI displays.
+
+  /**
+   * Resize the canvas and make sure it supports HiDPI displays.
+   */
   onWindowResize() {
     const dpr = window.devicePixelRatio;
     this.canvas.width = this.canvas.clientWidth * dpr;
@@ -40,21 +49,34 @@ export class Renderer {
     // Scale the context to ensure correct drawing operations
     this.gfx.scale(dpr, dpr);
   }
-  // Starts a new frame. Clears the screen.
+
+  /**
+   * Starts a new frame. Clears the screen.
+   */
   beginFrame() {
     this.gfx.fillStyle = "#4c087b";
     this.gfx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
-  // Ends the current frame. Swaps the rendered image onto the screen.
+
+  /**
+   * Ends the current frame. Swaps the rendered image onto the screen.
+   */
   endFrame() {
     this.frontBuffer.drawImage(this.backBuffer, 0, 0);
   }
-  // Draws given particles as 4x4 boxes.
+
+  /**
+   * Draws given particles as 4x4 boxes.
+   */
   drawParticles(particles) {
     const particleExtent = 2;
     const particleSize = particleExtent * 2;
-    this.gfx.fillStyle = "#ff00ff";
     for (const particle of particles) {
+      if (particle.isPinned) {
+        this.gfx.fillStyle = "#aa00aa";
+      } else {
+        this.gfx.fillStyle = "#ff00ff";
+      }
       this.gfx.fillRect(
         particle.currPosition.x - particleExtent,
         particle.currPosition.y - particleExtent,
@@ -63,14 +85,29 @@ export class Renderer {
       );
     }
   }
-  // Draws given springs as lines.
+
+  /**
+   * Draws given springs as lines.
+   */
   drawSprings(springs) {
-    this.gfx.strokeStyle = "#049904"
-    this.gfx.beginPath()
+    this.gfx.beginPath();
+    // this.gfx.strokeStyle = deformation == 0 ? "#049904" : "#ff0000"
+    this.gfx.strokeStyle = "#049904";
     for (const spring of springs) {
-      this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y)
-      this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y)
+      if (lessThanOrEqual(spring.deformation(), 5)) {
+        this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y);
+        this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y);
+      }
     }
-    this.gfx.stroke()
+    this.gfx.stroke();
+    this.gfx.beginPath();
+    this.gfx.strokeStyle = "#ff0000";
+    for (const spring of springs) {
+      if (greaterThan(spring.deformation(), 5)) {
+        this.gfx.moveTo(spring.p0.currPosition.x, spring.p0.currPosition.y);
+        this.gfx.lineTo(spring.p1.currPosition.x, spring.p1.currPosition.y);
+      }
+    }
+    this.gfx.stroke();
   }
 }

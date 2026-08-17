@@ -1,50 +1,50 @@
 import { Vector2D } from "../Math/Vector2D.js";
 
-// A point particle (also known as a "point body").
+const DAMPING = 0.98;
+
+const RESTING_VELOCITY_THRESHOLD = 0.1;
+
+/** A point particle (also known as a "point body"). */
 export class Particle {
-  constructor(x, y, mass) {
+  constructor(x, y) {
     if (x instanceof Vector2D) {
       this.currPosition = x.copy();
       this.prevPosition = x.copy();
-      this.mass = y || 1;
     } else {
       this.currPosition = new Vector2D(x, y);
       this.prevPosition = new Vector2D(x, y);
-      this.mass = mass || 1;
     }
     this.acceleration = Vector2D.zero();
     this.isPinned = false;
+    this.isAtRest = false;
   }
-  // Returns 0 if the particle isPinned, or its mass otherwise.
-  effectiveMass() {
-    return this.isPinned ? 0 : this.mass;
+
+  /**
+   * @returns {Vector2D} The velocity of this particle.
+   */
+  velocity() {
+    return this.currPosition.copy().sub(this.prevPosition);
   }
-  // Updates particle by integrating its motion with
-  // the Stormer-Verlet method:
-  //    pos = pos + (pos - prev_pos) * damping + acc * dt * dt
-  // where dapming = 0.98.
-  update(time) {
-    if (this.isPinned) {
+
+  /**
+   * Updates the particle position in space.
+   * The algorithim is based on Verlet integration method.
+   */
+  update() {
+    if (this.isPinned || this.isAtRest) {
       return;
     }
     const positionBeforeUpdate = this.currPosition.copy();
-    const velocity = this.currPosition.copy().sub(this.prevPosition).mul(0.98);
-    this.currPosition.add(velocity).add(this.acceleration.mul(time.dtSquared));
+    this.currPosition.add(this.velocity().add(this.acceleration).mul(DAMPING));
     this.prevPosition = positionBeforeUpdate;
     this.acceleration.set(0, 0);
     return this;
   }
-  // Applies force to the particle.
-  applyForce(x, y) {
-    if (this.isPinned) {
-      return;
-    }
-    const force = x instanceof Vector2D ? x.copy() : new Vector2D(x, y);
-    this.acceleration.add(force.div(this.mass));
-    return this;
-  }
-  // Applies acceleration to the particle.
-  applyAccel(x, y) {
+
+  /**
+   * Applies a given acceleration to the particle.
+   */
+  accelerate(x, y) {
     if (this.isPinned) {
       return;
     }
@@ -52,70 +52,33 @@ export class Particle {
     this.acceleration.add(accel);
     return this;
   }
+
+  /**
+   * @param {Particle} anotherParticle - The particle to compute distance to.
+   * @returns {number} The distance from this particle to the given one.
+   */
+  distanceTo(anotherParticle) {
+    return this.vectorTo(anotherParticle).magnitude();
+  }
+
+  /**
+   * @param {Particle} anotherParticle - The particle to which to build a vector.
+   * @returns {Vector2D} A vector from this particle to the given one.
+   */
+  vectorTo(anotherParticle) {
+    return anotherParticle.currPosition.copy().sub(this.currPosition);
+  }
+
+  /**
+   * @param {Vector2D} direction - The vector that represents the direction of movement. Can be a non-unit vector.
+   * @param {number} amount - The displacement along the given direction.
+   */
+  moveInDirectionBy(direction, amount) {
+    if (this.isPinned) {
+      return;
+    }
+    const displacementVector = direction.copy().normalize().mul(amount);
+    this.currPosition.add(displacementVector);
+    return this;
+  }
 }
-
-export const testParticle = () => {
-  // Once constructed, the particle is stationary.
-  var sut = new Particle(0, 0);
-  console.assert(
-    sut.currPosition.distanceTo(0, 0) == 0,
-    `Expected sut.currPosition: ${sut.currPosition.describe()}. Got: ${sut.currPosition.describe()}`,
-  );
-  console.assert(
-    sut.prevPosition.distanceTo(0, 0) == 0,
-    `Expected sut.prevPosition: ${sut.prevPosition.describe()}. Got: ${sut.prevPosition.describe()}`,
-  );
-  console.assert(
-    sut.acceleration.distanceTo(0, 0) == 0,
-    `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
-  );
-
-  // If updated, such particle will not move.
-  const mockTime = { dtSquared: 1, elapsedTicks: 1 };
-  sut.update(mockTime);
-  console.assert(
-    sut.currPosition.distanceTo(0, 0) == 0,
-    `Expected sut.currPosition: ${sut.currPosition.describe()}. Got: ${sut.currPosition.describe()}`,
-  );
-  console.assert(
-    sut.prevPosition.distanceTo(0, 0) == 0,
-    `Expected sut.prevPosition: ${sut.prevPosition.describe()}. Got: ${sut.prevPosition.describe()}`,
-  );
-  console.assert(
-    sut.acceleration.distanceTo(0, 0) == 0,
-    `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
-  );
-
-  // If its previous and current positions are different, but it has no acceleration, then
-  // the particle will move with a constant speed.
-  sut.currPosition.set(0, 1);
-  sut.update(mockTime);
-  console.assert(
-    sut.currPosition.distanceTo(0, 2) == 0,
-    `Expected sut.currPosition: ${sut.currPosition.describe()}. Got: ${sut.currPosition.describe()}`,
-  );
-  console.assert(
-    sut.prevPosition.distanceTo(0, 1) == 0,
-    `Expected sut.prevPosition: ${sut.prevPosition.describe()}. Got: ${sut.prevPosition.describe()}`,
-  );
-  console.assert(
-    sut.acceleration.distanceTo(0, 0) == 0,
-    `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
-  );
-
-  // Update resets the acceleration. Acceleration determines the change in particle velocity.
-  sut.acceleration.set(0, 1);
-  sut.update(mockTime);
-  console.assert(
-    sut.currPosition.distanceTo(0, 4) == 0,
-    `Expected sut.currPosition: ${sut.currPosition.describe()}. Got: ${sut.currPosition.describe()}`,
-  );
-  console.assert(
-    sut.prevPosition.distanceTo(0, 2) == 0,
-    `Expected sut.prevPosition: ${sut.prevPosition.describe()}. Got: ${sut.prevPosition.describe()}`,
-  );
-  console.assert(
-    sut.acceleration.distanceTo(0, 0) == 0,
-    `Expected sut.acceleration: ${sut.acceleration.describe()}. Got: ${sut.acceleration.describe()}`,
-  );
-};
