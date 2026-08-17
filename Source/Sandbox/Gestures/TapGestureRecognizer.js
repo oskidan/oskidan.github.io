@@ -98,4 +98,17 @@ export class TapGestureRecognizer extends GestureRecognizer {
       (this.minY + this.maxY) * 0.5,
     );
   }
+
+  /**
+   * @returns {number} The radius of the tap.
+   */
+  pointRadius() {
+    if (this.state !== GestureRecognizerState.ENDED) {
+      throw new Error("No tap gesture recognized yet.");
+    }
+    return Math.max(
+      0.5 * (this.maxX - this.minX),
+      0.5 * (this.maxY - this.minY),
+    );
+  }
 }
