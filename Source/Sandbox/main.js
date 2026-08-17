@@ -3,6 +3,11 @@ import { Particle } from "./Physics/Particle.js";
 import { Spring } from "./Physics/Spring.js";
 import { Vector2D } from "./Math/Vector2D.js";
 import { Renderer } from "./Rendering/Renderer.js";
+import {
+  GestureRecognizer,
+  GestureRecognizerState,
+} from "./Gestures/GestureRecognizer.js";
+import { TapGestureRecognizer } from "./Gestures/TapGestureRecognizer.js";
 
 const time = new Time(30);
 const renderer = new Renderer("#canvas");
@@ -93,16 +98,18 @@ const gameLoop = (currMillis) => {
   window.requestAnimationFrame(gameLoop);
 };
 
-renderer.canvas.onmousedown = (event) => {
-  const mousePos = new Vector2D(event.clientX, event.clientY);
-  const canvasRect = canvas.getBoundingClientRect();
-  mousePos.sub(canvasRect.x, canvasRect.y);
-  particles[19].currPosition.set(mousePos);
-  for (const particle of particles) {
-    const dir = particle.currPosition.copy().sub(mousePos);
-    const mag = (1.0 - Math.min(dir.magnitude() / 128, 1.0)) * 64;
-    dir.normalize();
-    particle.accelerate(dir.mul(mag));
+const gestureRecognizer = new TapGestureRecognizer(renderer.canvas);
+gestureRecognizer.delegate = (recognizer) => {
+  console.log(`Recognizer state ${recognizer.state}`);
+  if (recognizer.state == GestureRecognizerState.ENDED) {
+    const tapLocation = recognizer.pointAtIndex(0);
+    console.log(`Tapped ${tapLocation.describe()}`);
+    for (const particle of particles) {
+      const dir = particle.currPosition.copy().sub(tapLocation);
+      const mag = (1.0 - Math.min(dir.magnitude() / 128, 1.0)) * 64;
+      dir.normalize();
+      particle.accelerate(dir.mul(mag));
+    }
   }
 };
 
