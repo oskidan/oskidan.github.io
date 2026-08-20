@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Stormer-Verlet Physics Sandbox (Data Oriented Desing)</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+
+            body,
+            html {
+                height: 100%;
+                overflow: hidden;
+                touch-action: none;
+                /* Disable the built-in browser touch gestures. */
+            }
+
+            #canvas {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                display: block;
+            }
+        </style>
+    </head>
+
+    <body>
+        <canvas id="canvas"> Your browser doesn't support canvas. </canvas>
+        <script src="Source/SandboxDOD/main.js" type="module"></script>
+    </body>
+</html>
